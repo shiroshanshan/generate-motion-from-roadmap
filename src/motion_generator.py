@@ -158,7 +158,6 @@ def generate_vmd_file(rotations, vmd_file, bone_csv_file):
     for k,v in bone_frame_dic.items():
         for bf in v:
             bone_frames.append(bf)
-
     writer.write_vmd_file(vmd_file, bone_frames, None)
 
 def calc_center():

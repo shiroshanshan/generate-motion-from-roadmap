@@ -5,11 +5,12 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 class State(object):
-    def __init__(self, position, next):
-        if type(position) == list and type(next) == list:
+    def __init__(self, position, prev, next):
+        if type(position) == list:
             self.position = np.array(position)
+            self.prev = np.array(prev)
             self.next = np.array(next)
-            self.velocity = self.next - self.position
+            self.velocity = self.next + self.prev - 2 * self.position
             self.state = np.hstack((self.position, self.velocity))
         else:
             print('the argument need to be a list(frame)')
@@ -22,24 +23,21 @@ class State(object):
 
     def connect(self, state, mp, mv):
         position, velocity = self.calculate_distance(state)
-        if position < 2*mp and velocity < 2*mv and position != 0:
+        if position < mp and velocity < mv and np.any(state.rounded()[1] != self.rounded()[0]):
             return True
         else:
             return False
 
     def rounded(self):
         row, column = self.position.shape
+        prev = np.zeros((row, column))
         state = np.zeros((row, column))
+        next = np.zeros((row, column))
         for i in range(self.position.size):
-            state[i/column][i%column] = round(self.position.item(i),1)
-        return state
-
-    def rounded_next(self):
-        row, column = self.next.shape
-        state = np.zeros((row,column))
-        for i in range(self.next.size):
-            state[i/column][i%column] = round(self.next.item(i),1)
-        return state
+            prev[i/column][i%column] = round(self.prev.item(i),0)
+            state[i/column][i%column] = round(self.position.item(i),0)
+            next[i/column][i%column] = round(self.next.item(i),0)
+        return prev, state, next
 
 
 class Roadmap(object):
@@ -52,24 +50,24 @@ class Roadmap(object):
             else:
                 self.length_list.append(self.length_list[i-1] + length_list[i])
         self.number = len(self.length_list)
-        self.route = []
-        for i in range(self.number):
-            if i == 0:
-                self.route.append(self.data_list[:self.length_list[i]])
-            else:
-                self.route.append(self.data_list[self.length_list[i-1]:self.length_list[i]])
 
+        ### create states ###
     def create_states(self):
         self.states = []
-        for rt in self.route:
+        for i in range(self.number):
+            if i == 0:
+                rt = self.data_list[:self.length_list[i]]
+            else:
+                rt = self.data_list[self.length_list[i-1]:self.length_list[i]]
             route = []
             for i in range(len(rt)):
                 if i == len(rt) - 1:
-                    state = State(rt[i],rt[i])
-                    route.append(state)
+                    state = State(rt[i],rt[i-1],rt[i])
+                elif i == 0:
+                    state = State(rt[i],rt[i],rt[i+1])
                 else:
-                    state = State(rt[i],rt[i+1])
-                    route.append(state)
+                    state = State(rt[i],rt[i-1],rt[i+1])
+                route.append(state)
             self.states.append(route)
 
     def eliminate_same_state(self):
@@ -78,12 +76,11 @@ class Roadmap(object):
             tmp_rt = []
             delect = []
             for j in range(len(self.states[i])):
-                if np.array2string(self.states[i][j].rounded()) not in tmp_rt:
-                    tmp_rt.append(np.array2string(self.states[i][j].rounded()))
+                if np.array2string(self.states[i][j].rounded()[1]) not in tmp_rt:
+                    tmp_rt.append(np.array2string(self.states[i][j].rounded()[1]))
                 else:
                     repeat += 1
                     delect.append(j)
-            print(delect)
             try:
                 delect.sort()
                 for k in reversed(delect):
@@ -92,24 +89,32 @@ class Roadmap(object):
                 print('no same state in route %d'%i)
         print('repeat:%d'%repeat)
 
-    def resampling(self, size=0, threshold=10):
+    def resampling(self, position=0, velocity=0, threshold=10):
         eliminate = 0
         for i in range(len(self.states)):
             delect = []
+            prev = []
             for j in range(len(self.states[i])):
-                near = []
+                near = 0
                 for rt in self.states:
                     for state in rt:
-                        if self.states[i][j].calculate_distance(state)[0] < size:
-                            near.append(state)
-                if np.random.uniform(0, len(near)) > threshold:
+                        if self.states[i][j].calculate_distance(state)[0] < position and self.states[i][j].calculate_distance(state)[1] < velocity:
+                            near += 1
+                if np.random.uniform(0, near) > threshold:
                     delect.append(j)
+                    if j != 0:
+                        prev.append(j-1)
+                    for o in reversed(range(len(prev))):
+                        if prev[o] in delect:
+                            del prev[o]
                     eliminate += 1
             try:
                 print('eliminate:%d'%eliminate)
                 delect.sort()
                 for k in reversed(delect):
                     del self.states[i][k]
+                for m in reversed(prev):
+                    self.states[i][m].next = np.zeros((10, 3))
             except:
                 print('no state delected in resampling')
 
@@ -127,11 +132,21 @@ class Roadmap(object):
 
         return mean_pos_dis, mean_velo_dis
 
+    def test(self):
+        self.create_states()
+        print(len(self.states))
+        for item in self.states:
+            for state in item:
+                a = np.array(state.state)
+                c = a[:,:3]
+                b = np.array(state.position)
+                print(c.shape)
+
     def create_roadmap(self):
         self.create_states()
         self.eliminate_same_state()
         mp, mv = self.find_mean_distance()
-        self.resampling(size=mp)
+        self.resampling(position=mp,velocity=mv)
         roadmap = {}
         cnt = 1
         repeat = 0
@@ -140,23 +155,28 @@ class Roadmap(object):
             for state in rt:
                 print('%d/%d'%(cnt, self.length_list[self.number-1]))
                 try:
-                    tmp = roadmap[np.array2string(state.rounded())]
-                    print(len(state.rounded()))
-                    error.append(state.rounded())
+                    tmp = roadmap[np.array2string(state.rounded()[1])]
+                    print('error for repeating values')
+                    error.append(state.rounded()[1])
                     repeat += 1
                 except:
                     cnt += 1
-                    roadmap[np.array2string(state.rounded())] = []
-                    roadmap[np.array2string(state.rounded())].append(np.array2string(state.rounded_next()))
+                    roadmap[np.array2string(state.rounded()[1])] = []
+                    if np.any(state.rounded()[2] != np.zeros((10, 3))):
+                        roadmap[np.array2string(state.rounded()[1])].append(np.array2string(state.rounded()[2]))
                     for rt2 in self.states:
                         for state2 in rt2:
-                            if state.connect(state2, mp, mv) and np.array2string(state2.rounded()) not in roadmap[np.array2string(state.rounded())]:
-                                roadmap[np.array2string(state.rounded())].append(np.array2string(state2.rounded()))
+                            if state.connect(state2, mp, mv) and np.array2string(state2.rounded()[1]) not in roadmap[np.array2string(state.rounded()[1])]:
+                                roadmap[np.array2string(state.rounded()[1])].append(np.array2string(state2.rounded()[1]))
 
-                    print('%d state connected'%(len(roadmap[np.array2string(state.rounded())])))
+                    print('%d state connected'%(len(roadmap[np.array2string(state.rounded()[1])])))
         print('mean velocity: %f'%mv)
         print('mean position: %f'%mp)
         print('repeat: %d'%repeat)
+        if repeat == 0:
+          print('no error')
+        else:
+          print('error for repeating values')
         return roadmap
 
     def save_roadmap(self, path):
@@ -181,7 +201,7 @@ if __name__ == '__main__':
     JOINT_NAME[9] = 'Right Elbow'
 
     ROADMAP = {}
-    PATH = '/home/fan/build_roadmap/rotation/'
+    PATH = '/home/fan/generate-motion-from-roadmap/rotation/'
     dirs = os.listdir(PATH)
     data = []
     length = []
@@ -206,4 +226,4 @@ if __name__ == '__main__':
                 data.append(tmplist)
 
     roadmap = Roadmap(data, length)
-    roadmap.save_roadmap('/home/fan/build_roadmap/roadmap/')
+    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/')
