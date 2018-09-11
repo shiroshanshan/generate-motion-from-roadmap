@@ -34,9 +34,9 @@ class State(object):
         state = np.zeros((row, column))
         next = np.zeros((row, column))
         for i in range(self.position.size):
-            prev[i/column][i%column] = round(self.prev.item(i),0)
-            state[i/column][i%column] = round(self.position.item(i),0)
-            next[i/column][i%column] = round(self.next.item(i),0)
+            prev[int(i/column)][i%column] = round(self.prev.item(i),0)
+            state[int(i/column)][i%column] = round(self.position.item(i),0)
+            next[int(i/column)][i%column] = round(self.next.item(i),0)
         return prev, state, next
 
 
@@ -111,10 +111,10 @@ class Roadmap(object):
             try:
                 print('eliminate:%d'%eliminate)
                 delect.sort()
-                for k in reversed(delect):
-                    del self.states[i][k]
                 for m in reversed(prev):
                     self.states[i][m].next = np.zeros((10, 3))
+                for k in reversed(delect):
+                    del self.states[i][k]
             except:
                 print('no state delected in resampling')
 
@@ -151,8 +151,9 @@ class Roadmap(object):
         cnt = 1
         repeat = 0
         error = []
-        for rt in self.states:
-            for state in rt:
+        for rt in range(len(self.states)):
+            for state in self.states[rt]:
+                print('start creating')
                 print('%d/%d'%(cnt, self.length_list[self.number-1]))
                 try:
                     tmp = roadmap[np.array2string(state.rounded()[1])]
@@ -170,6 +171,8 @@ class Roadmap(object):
                                 roadmap[np.array2string(state.rounded()[1])].append(np.array2string(state2.rounded()[1]))
 
                     print('%d state connected'%(len(roadmap[np.array2string(state.rounded()[1])])))
+                    roadmap[np.array2string(state.rounded()[1])].append(rt)
+                    print(roadmap[np.array2string(state.rounded()[1])])
         print('mean velocity: %f'%mv)
         print('mean position: %f'%mp)
         print('repeat: %d'%repeat)
@@ -177,6 +180,7 @@ class Roadmap(object):
           print('no error')
         else:
           print('error for repeating values')
+
         return roadmap
 
     def save_roadmap(self, path):

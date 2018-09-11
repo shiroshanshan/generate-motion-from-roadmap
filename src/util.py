@@ -2,6 +2,7 @@ import re
 import numpy as np
 import math
 from scipy import signal
+import matplotlib.pyplot as plt
 
 def normalize(input_list):
     sum = 0.
@@ -91,3 +92,21 @@ def filter(data,fc=6):
             data[:,i,j] = f2
 
     return data
+
+def showAnimCurves(animData, _plt):
+    animData = np.array(animData)
+    for o in range(animData.shape[1]):
+        xl = animData[:,o,0]
+        yl = animData[:,o,1]
+        zl = animData[:,o,2]
+        il = np.arange(0,(animData.shape[0]-0.001)/30.,1/30.)
+        _plt.plot(il, xl, 'r--', linewidth=0.2)
+        _plt.plot(il, yl, 'g', linewidth=0.2)
+        _plt.plot(il, zl, 'b', linewidth=0.2)
+    return _plt
+
+def plot_route_transfer(route,_plt):
+    il = np.arange(0,(len(route)-0.001)/30.,1/30.)
+    route = np.array(route)
+    _plt.plot(il, route, 'r', linewidth=0.5)
+    return _plt

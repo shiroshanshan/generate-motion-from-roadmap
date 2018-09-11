@@ -148,15 +148,3 @@ def openpose_check(openpose_dir):
         return "error 2"
     else:
         return "pass"
-
-
-# In[191]:
-
-
-openpose_check('/home/fan/Documents/openpose/output/20180704112858/')
-
-
-# In[192]:
-
-
-openpose_select('/home/fan/Documents/openpose/output/20180704112858/')

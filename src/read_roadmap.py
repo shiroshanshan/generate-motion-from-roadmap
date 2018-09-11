@@ -4,6 +4,8 @@ import csv
 import datetime
 import re
 import math
+import argparse
+import matplotlib.pyplot as plt
 from util import *
 
 class Roadmap(object):
@@ -14,9 +16,9 @@ class Roadmap(object):
 
     def read_roadmap(self, roadmap_dic):
         for key, value in roadmap_dic.items():
-            for i in range(len(value)):
+            for i in range(len(value[:-1])):
                 value[i] = string2nparray(value[i])
-            state = State(string2nparray(key),value)
+            state = State(string2nparray(key),value[:-1])
             self.states.append(state)
             roadmap_array[key] = value
         self.length = len(self.states)
@@ -37,22 +39,46 @@ class Roadmap(object):
 
             return self.states[choice].state
 
-    def motion_generation(self, init_state, vmd_file, bone_csv_file):
+    def motion_generation(self, init_state, vmd_file, bone_csv_file, plot):
         rotations = []
         print('vmd file generating')
         rotations.append(init_state)
         frames = 900
+        route = []
         for i in range(frames):
             print('%d/%d'%(i, frames))
             if roadmap_array[np.array2string(init_state)]:
-                next = roadmap_array[np.array2string(init_state)]
+                next = roadmap_array[np.array2string(init_state)][:-1]
+                route.append(roadmap_array[np.array2string(init_state)][-1])
                 selected_state = select_policy(rotations, init_state, next, 100)
+                print(roadmap_array[np.array2string(init_state)][-1])
                 rotations.append(selected_state)
                 init_state = selected_state
             else:
                 print('no connected state')
                 break
+        if plot == True:
+            plt.figure(1)
+            raw_data_image = showAnimCurves(rotations, plt)
+            plt.xlabel('Time(Second)')
+            plt.ylabel('Rotations(Degree)')
+            fig_name = 'images/raw_data.png'
+            plt.savefig(fig_name)
         rotations = filter(rotations)
+        if plot == True:
+            plt.figure(2)
+            smoothed_image = showAnimCurves(rotations, plt)
+            plt.xlabel('Time(Second)')
+            plt.ylabel('Rotations(Degree)')
+            fig_name = 'images/smoothed.png'
+            plt.savefig(fig_name)
+        if plot == True:
+            plt.figure(3)
+            raw_data_image = plot_route_transfer(route, plt)
+            plt.xlabel('Time(Second)')
+            plt.ylabel('Route(#)')
+            fig_name = 'images/route_transfer.png'
+            plt.savefig(fig_name)
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
         return rotations
 
@@ -67,6 +93,12 @@ class State(object):
         return position_distance
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='generate motion file from roadmap')
+    parser.add_argument('-p', '--plot', dest='plot', type=bool,
+                        help='plot images')
+    args = parser.parse_args()
+    plot = args.plot
+
     with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as f:
         roadmap = f.read()
         roadmap = eval(roadmap)
@@ -77,4 +109,4 @@ if __name__ == '__main__':
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     bone_csv_file = '/home/fan/Documents/model.csv'
     vmd_file = '/home/fan/generate-motion-from-roadmap/vmdfile/{0}.vmd'.format(timenow)
-    states = rdp.motion_generation(init_state, vmd_file, bone_csv_file)
+    states = rdp.motion_generation(init_state, vmd_file, bone_csv_file, plot)
