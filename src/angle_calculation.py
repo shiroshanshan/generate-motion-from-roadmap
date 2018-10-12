@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import os
 import re
 from PyQt5.QtGui import QQuaternion, QVector3D
@@ -64,7 +66,7 @@ def positions_to_rotation(pos, frame=0, xangle=0):
     lower_body_orientation = QQuaternion.fromDirection(direction, up)
     initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(0, 0, 1))
     lower_body_rotation = lower_body_orientation * initial.inverted()
-    lower_body_rotation = 0.3 * lower_body_rotation
+    lower_body_rotation = 0.1 * lower_body_rotation
 
     if lower_body_rotation.toEulerAngles().y() < 30 and lower_body_rotation.toEulerAngles().y() > -30:
         lower_correctqq = QQuaternion.fromEulerAngles(QVector3D(0, 0, 0))

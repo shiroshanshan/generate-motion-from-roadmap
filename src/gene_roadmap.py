@@ -183,8 +183,30 @@ class Roadmap(object):
 
         return roadmap
 
+    def eliminate_isolated_states(self, roadmap):
+        delect = []
+        change = True
+        while change == True:
+            change = False
+            for state,connect in roadmap.items():
+                count = 0
+                for item in connect[:-1]:
+                    if item not in delect:
+                        count += 1
+                if count == 1:
+                    delect.append(state)
+                    change = True
+                    del roadmap[state]
+        for state,connect in roadmap.items():
+            for i in range(len(roadmap[state][:-1])):
+                if roadmap[state][i] in delect:
+                    del roadmap[state][i]
+
+        return roadmap
+
     def save_roadmap(self, path):
         roadmap = self.create_roadmap()
+        roadmap = self.eliminate_isolated_states(roadmap)
         roadmap = json.dumps(roadmap)
         with open(path + 'roadmap.json', 'w') as f:
             f.write(roadmap)

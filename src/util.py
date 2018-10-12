@@ -6,10 +6,13 @@ import matplotlib.pyplot as plt
 
 def normalize(input_list):
     sum = 0.
+    ctn = True
     for item in input_list:
         sum += item
+    if sum < 1:
+        ctn = False
     print(sum)
-    return np.array(input_list)/sum
+    return np.array(input_list)/sum, ctn
 
 def string2nparray(string):
     string = re.split('\n\s+',string)
@@ -22,31 +25,45 @@ def string2nparray(string):
 
     return np.array(string)
 
-def select_policy(prev_states, state, next_states, number=100):
+def select_policy(prev_states, one_way_states, state, next_states, number=100):
     connect_num = len(next_states)
     if len(prev_states) > number:
         memo = prev_states[-number:]
     elif len(prev_states) == 0:
         choice = np.random.randint(0, connect_num)
+        return next_states[choice]
     else:
         memo = prev_states
 
     possibility = []
     for i in range(len(next_states)):
         possibility.append(1.)
-
+    # for i in range(len(next_states)):
+    #     n = np.linalg.norm(next_states[i][0] - state[0])
+    #     possibility[i] = math.exp(-n)
     for i in range(len(memo)):
         for j in range(len(next_states)):
             if np.all(memo[i] == next_states[j]):
                 possibility[j] = math.exp(-i)
             else:
                 pass
-    possibility = normalize(possibility)
+
+    possibility, ctn = normalize(possibility)
     choice = np.random.choice(connect_num, 1, p=possibility)[0]
 
-    return next_states[choice]
+    # while whether_in(next_states[choice], one_way_states):
+    #     choice = np.random.choice(connect_num, 1, p=possibility)[0]
+    #     print(next_states)
+    #     print(p)
+    return next_states[choice], ctn
 
-def filter(data,fc=6):
+def whether_in(nparray, nparrays):
+    for item in nparrays:
+        if np.all(item == nparray):
+            return True
+    return False
+
+def filter(data, fc=3):
     # fps = 30
     # n = len(data)
     # dt = 1./fps
@@ -110,3 +127,12 @@ def plot_route_transfer(route,_plt):
     route = np.array(route)
     _plt.plot(il, route, 'r', linewidth=0.5)
     return _plt
+
+def write_rotation_file(rotationfile,rotationlist):
+    for frame in rotationlist:
+        for joint in frame:
+            rotationfile.write(str(joint[0]) + " " + str(joint[1]) + " " + str(joint[2]))
+            if np.all(joint != frame[len(frame)-1]):
+                rotationfile.write(',')
+            else:
+                rotationfile.write('\n')
