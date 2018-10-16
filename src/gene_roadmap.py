@@ -196,7 +196,8 @@ class Roadmap(object):
                 if count == 1:
                     delect.append(state)
                     change = True
-                    del roadmap[state]
+        for state in delect:
+            del roadmap[state]
         for state,connect in roadmap.items():
             for i in range(len(roadmap[state][:-1])):
                 if roadmap[state][i] in delect:
