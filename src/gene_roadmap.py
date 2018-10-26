@@ -3,6 +3,7 @@ import os
 import re
 import numpy as np
 from scipy.stats import gaussian_kde
+import threading
 
 class State(object):
     def __init__(self, position, prev, next):
@@ -186,9 +187,26 @@ class Roadmap(object):
     def eliminate_isolated_states(self, roadmap):
         delect = []
         change = True
+        out_loop = 0
+        inner_loop = 0
+        def printf():
+            timer = threading.Timer(10, printf)
+            timer.start()
+            print('out loop:', out_loop)
+            print('inner_loop:', inner_loop)
+
+        timer = threading.Timer(10, printf)
+        timer.start()
+
+        def savef():
+
+
         while change == True:
+            out_loop += 1
             change = False
+            inner_loop = 0
             for state,connect in roadmap.items():
+                inner_loop += 1
                 count = 0
                 for item in connect[:-1]:
                     if item not in delect:
@@ -196,12 +214,15 @@ class Roadmap(object):
                 if count == 1:
                     delect.append(state)
                     change = True
+        print('------start to delete isolated nodes------')
         for state in delect:
             del roadmap[state]
+        print('------start to delete redundancy data------')
         for state,connect in roadmap.items():
             for i in range(len(roadmap[state][:-1])):
                 if roadmap[state][i] in delect:
                     del roadmap[state][i]
+        print('------end of processing------')
 
         return roadmap
 
@@ -209,7 +230,14 @@ class Roadmap(object):
         roadmap = self.create_roadmap()
         roadmap = self.eliminate_isolated_states(roadmap)
         roadmap = json.dumps(roadmap)
-        with open(path + 'roadmap.json', 'w') as f:
+        with open(path, 'w') as f:
+            f.write(roadmap)
+        print('successed save')
+
+    def continue_processing(self, path):
+        roadmap = self.eliminate_isolated_states(roadmap)
+        roadmap = json.dumps(roadmap)
+        with open(path, 'w') as f:
             f.write(roadmap)
         print('successed save')
 
@@ -253,4 +281,4 @@ if __name__ == '__main__':
                 data.append(tmplist)
 
     roadmap = Roadmap(data, length)
-    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/')
+    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json')
