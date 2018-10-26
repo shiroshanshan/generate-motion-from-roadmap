@@ -198,9 +198,6 @@ class Roadmap(object):
         timer = threading.Timer(10, printf)
         timer.start()
 
-        def savef():
-
-
         while change == True:
             out_loop += 1
             change = False
@@ -228,13 +225,6 @@ class Roadmap(object):
 
     def save_roadmap(self, path):
         roadmap = self.create_roadmap()
-        roadmap = self.eliminate_isolated_states(roadmap)
-        roadmap = json.dumps(roadmap)
-        with open(path, 'w') as f:
-            f.write(roadmap)
-        print('successed save')
-
-    def continue_processing(self, path):
         roadmap = self.eliminate_isolated_states(roadmap)
         roadmap = json.dumps(roadmap)
         with open(path, 'w') as f:
