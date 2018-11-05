@@ -3,7 +3,9 @@ import os
 import re
 import numpy as np
 from scipy.stats import gaussian_kde
+from scipy.sparse import lil_matrix, csr_matrix, csc_matrix
 import threading
+import argparse
 
 class State(object):
     def __init__(self, position, prev, next):
@@ -133,15 +135,74 @@ class Roadmap(object):
 
         return mean_pos_dis, mean_velo_dis
 
-    def test(self):
+    def create_roadmap_matrix(self):
         self.create_states()
-        print(len(self.states))
-        for item in self.states:
-            for state in item:
-                a = np.array(state.state)
-                c = a[:,:3]
-                b = np.array(state.position)
-                print(c.shape)
+        self.eliminate_same_state()
+        mp, mv = self.find_mean_distance()
+        self.resampling(position=mp,velocity=mv)
+        roadmap_list = []
+        route_list = []
+        next = []
+        print('creating roadmap')
+        cnt = 0
+        rt = -1
+        for route in self.states:
+            rt += 1
+            for state in route:
+                print('creating roadmap:%d/%d'%(cnt, self.length_list[self.number-1]))
+                cnt += 1
+                roadmap_list.append(np.array2string(state.rounded()[1]))
+                route_list.append(rt)
+                tmp = []
+                tmp.append(state.rounded()[2])
+                for route2 in self.states:
+                    for state2 in route2:
+                        if state.connect(state2, mp, mv) and all((state2.rounded()[1] != x).any() for x in tmp):
+                            tmp.append(state2.rounded()[1])
+                print(len(tmp))
+                next.append(tmp)
+        roadmap = lil_matrix((len(roadmap_list), len(roadmap_list)))
+        print('calculating roadmap matrix')
+        cnt = 0
+        for i in range(len(roadmap_list)):
+            print('calculating roadmap matrix:%d/%d'%(cnt,len(roadmap_list)))
+            cnt += 1
+            for j in range(len(next[i])):
+                if np.any(next[i][j] != np.zeros((10,3))):
+                    idx = roadmap_list.index(np.array2string(next[i][j]))
+                    roadmap[i,idx] = 1
+                else:
+                    pass
+
+        return roadmap, roadmap_list, route_list
+
+    def eliminate_isolated_state_matrix(self, roadmap, roadmap_list, route_list):
+        roadmap = roadmap.tocsr()
+        change = True
+        loop = 0
+        dot = 0
+        while change:
+            print('loop:%s'%(loop))
+            loop += 1
+            change = False
+            delete = []
+            s = roadmap.sum(axis=1)
+            for i in range(len(s)):
+                if s[i] == 1:
+                    change = True
+                    delete.append(i)
+            dot += len(delete)
+            row = np.arange(roadmap.shape[0])
+            row = np.where(np.logical_not(np.in1d(row, delete)))[0]
+            roadmap = roadmap[row,:]
+            roadmap = roadmap[:,row]
+            for i in reversed(range(len(delete))):
+                del roadmap_list[i]
+                del route_list[i]
+        print('%d dots deleted because of isolated dot'%(dot))
+
+        return roadmap, roadmap_list, route_list
+
 
     def create_roadmap(self):
         self.create_states()
@@ -190,6 +251,8 @@ class Roadmap(object):
         out_loop = 0
         inner_loop = 0
         def printf():
+            if successed == True:
+                return 0
             timer = threading.Timer(10, printf)
             timer.start()
             print('out loop:', out_loop)
@@ -223,16 +286,39 @@ class Roadmap(object):
 
         return roadmap
 
-    def save_roadmap(self, path):
-        roadmap = self.create_roadmap()
-        roadmap = self.eliminate_isolated_states(roadmap)
+    def convert_matrix2dict(self, roadmap, roadmap_list, route_list):
+        roadmap_dic = {}
+        for i in range(len(roadmap_list)):
+            roadmap_dic[roadmap_list[i]] = []
+            for j in range(len(roadmap_list)):
+                if roadmap[i,j] == 1:
+                    roadmap_dic[roadmap_list[i]].append(roadmap_list[j])
+            roadmap_dic[roadmap_list[i]].append(route_list[i])
+        roadmap = roadmap_dic
+
+        return roadmap
+
+    def save_roadmap(self, path, matrix=False):
+        if matrix:
+            roadmap, roadmap_list, route_list = self.create_roadmap_matrix()
+            roadmap, roadmap_list, route_list = self.eliminate_isolated_state_matrix(roadmap, roadmap_list, route_list)
+            roadmap = self.convert_matrix2dict(roadmap, roadmap_list, route_list)
+        else:
+            roadmap = self.create_roadmap()
+            roadmap = self.eliminate_isolated_states(roadmap)
         roadmap = json.dumps(roadmap)
         with open(path, 'w') as f:
             f.write(roadmap)
+        global successed
+        successed = True
         print('successed save')
 
-
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='create roadmap by dict (or matrix)')
+    parser.add_argument('-m', '--matrix', dest='matrix', type=bool,
+                        help='create roadmap by matrix')
+    args = parser.parse_args()
+    matrix = args.matrix
     JOINT_NAME = [''] * 10
     JOINT_NAME[0] = 'Upper Body'
     JOINT_NAME[1] = 'Lower Body Scaled'
@@ -246,6 +332,7 @@ if __name__ == '__main__':
     JOINT_NAME[9] = 'Right Elbow'
 
     ROADMAP = {}
+    successed = False
     PATH = '/home/fan/generate-motion-from-roadmap/rotation/'
     dirs = os.listdir(PATH)
     data = []
@@ -271,4 +358,4 @@ if __name__ == '__main__':
                 data.append(tmplist)
 
     roadmap = Roadmap(data, length)
-    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json')
+    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', matrix)

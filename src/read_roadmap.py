@@ -41,31 +41,24 @@ class Roadmap(object):
             return self.states[choice].state
 
     def motion_generation(self, init_state, vmd_file, bone_csv_file, plot, write):
-        while True:
-            init_state = rdp.init_state()
-            rotations = []
-            print('vmd file generating')
-            rotations.append(init_state)
-            frames = 900
-            route = []
-            cnt = 0
-            for i in range(frames):
-                print('%d/%d'%(i, frames))
-                if roadmap_array[np.array2string(init_state)]:
-                    next = roadmap_array[np.array2string(init_state)][:-1]
-                    route.append(roadmap_array[np.array2string(init_state)][-1])
-                    selected_state, ctn = select_policy(rotations, self.one_way_states, init_state, next, 100)
-                    if ctn == False:
-                        cnt += 1
-                    if cnt > 30:
-                        break
-                    rotations.append(selected_state)
-                    init_state = selected_state
-                else:
-                    print('no connected state')
-                    break
-            if cnt <= 30:
+        init_state = rdp.init_state()
+        rotations = []
+        print('vmd file generating')
+        rotations.append(init_state)
+        frames = 900
+        route = []
+        for i in range(frames):
+            print('%d/%d'%(i, frames))
+            if roadmap_array[np.array2string(init_state)]:
+                next = roadmap_array[np.array2string(init_state)][:-1]
+                route.append(roadmap_array[np.array2string(init_state)][-1])
+                selected_state = select_policy(rotations, self.one_way_states, init_state, next, 100)
+                rotations.append(selected_state)
+                init_state = selected_state
+            else:
+                print('no connected state')
                 break
+
         if write == True:
             with open('readed_data/raw_data.txt','w') as f:
                 write_rotation_file(f, rotations)

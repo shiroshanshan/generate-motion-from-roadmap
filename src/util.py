@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 
 def normalize(input_list):
     sum = 0.
-    ctn = True
+    # ctn = True
     for item in input_list:
         sum += item
-    if sum < 1:
-        ctn = False
+    # if sum < 1:
+    #     ctn = False
     print(sum)
-    return np.array(input_list)/sum, ctn
+    return np.array(input_list)/sum
 
 def string2nparray(string):
     string = re.split('\n\s+',string)
@@ -48,14 +48,14 @@ def select_policy(prev_states, one_way_states, state, next_states, number=100):
             else:
                 pass
 
-    possibility, ctn = normalize(possibility)
+    possibility = normalize(possibility)
     choice = np.random.choice(connect_num, 1, p=possibility)[0]
 
     # while whether_in(next_states[choice], one_way_states):
     #     choice = np.random.choice(connect_num, 1, p=possibility)[0]
     #     print(next_states)
     #     print(p)
-    return next_states[choice], ctn
+    return next_states[choice]
 
 def whether_in(nparray, nparrays):
     for item in nparrays:
