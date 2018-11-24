@@ -4,176 +4,212 @@ import re
 import numpy as np
 from scipy.stats import gaussian_kde
 from scipy.sparse import lil_matrix, csr_matrix, csc_matrix
+from sklearn.metrics.pairwise import cosine_similarity
 import threading
+import math
 import argparse
+import datetime
 
+###
+#a object called state
+###
 class State(object):
-    def __init__(self, position, prev, next):
-        if type(position) == list:
-            self.position = np.array(position)
-            self.prev = np.array(prev)
-            self.next = np.array(next)
-            self.velocity = self.next + self.prev - 2 * self.position
-            self.state = np.hstack((self.position, self.velocity))
+    def __init__(self, roataion):
+        if type(rotation) == list:
+            self.position = np.array(rotation)
+            self.prev = None
+            self.next = None
+            self.velocity = None
+            self.state = None
         else:
             print('the argument need to be a list(frame)')
+            with open(LOG_PATH, 'a') as f:
+                f.write('the argument need to be a list(frame)\n')
 
-    def calculate_distance(self, state):
-        position_distance = np.linalg.norm(self.position-state.position)
-        velocity_distance = np.linalg.norm(self.velocity-state.velocity)
+    def calculate_velocity(self):
+        if self.next == None:
+            self.velocity = self.position - self.prev
+        elif self.prev == None:
+            self.velocity = self.next - self.position
+        else:
+            self.velocity = (self.next - self.prev) / 2
+        self.state = np.vstack((self.position[np.newaxis,:], self.velocity[np.newaxis,:]))
 
-        return position_distance, velocity_distance
+    def calculate_difference(self, position, velocity):
+        position_difference = position - (self.position + self.velocity)
+        velocity_difference = velocity - self.velocity
 
-    def connect(self, state, mp, mv):
-        position, velocity = self.calculate_distance(state)
-        if position < mp and velocity < mv and np.any(state.rounded()[1] != self.rounded()[0]):
+        return position_difference, velocity_difference
+
+    def connect(self, state, threshold):
+        confidence = discriminator(self.state, state)
+        if confidence > threshold:
             return True
         else:
             return False
 
     def rounded(self):
-        row, column = self.position.shape
-        prev = np.zeros((row, column))
-        state = np.zeros((row, column))
-        next = np.zeros((row, column))
-        for i in range(self.position.size):
-            prev[int(i/column)][i%column] = round(self.prev.item(i),0)
-            state[int(i/column)][i%column] = round(self.position.item(i),0)
-            next[int(i/column)][i%column] = round(self.next.item(i),0)
-        return prev, state, next
+        idx, row, column = self.state.shape
+        state = np.zeros((idx, row, column))
+        for i in range(self.state.size):
+            state[i//30][i%30//column][i%column] = round(self.position.item(i),1)
+        return state
 
 
 class Roadmap(object):
-    def __init__(self, data_list, length_list):
-        self.data_list = data_list
-        self.length_list = []
-        for i in range(len(length_list)):
+    def __init__(self, length):
+        self.ends = []
+        for i in range(len(length)):
             if i == 0:
-                self.length_list.append(length_list[0])
+                self.ends.append(length[0])
             else:
-                self.length_list.append(self.length_list[i-1] + length_list[i])
-        self.number = len(self.length_list)
-
-        ### create states ###
-    def create_states(self):
+                self.ends.append(self.ends[i-1] + length[i])
+        self.number = len(self.ends)
         self.states = []
+
+    ###
+    #initiate states
+    ###
+    def create_states(self, data):
         for i in range(self.number):
             if i == 0:
-                rt = self.data_list[:self.length_list[i]]
+                partition = data[:self.ends[i]]
             else:
-                rt = self.data_list[self.length_list[i-1]:self.length_list[i]]
+                partition = data[self.ends[i-1]:self.ends[i]]
             route = []
-            for i in range(len(rt)):
-                if i == len(rt) - 1:
-                    state = State(rt[i],rt[i-1],rt[i])
-                elif i == 0:
-                    state = State(rt[i],rt[i],rt[i+1])
+            for j in range(len(partition)):
+                state = State(partition[j])
+                if j == 0:
+                    state.next = partition[j+1]
+                elif j == len(routes)-1:
+                    state.prev = partition[j-1]
                 else:
-                    state = State(rt[i],rt[i-1],rt[i+1])
+                    state.next = partition[j+1]
+                    state.prev = partition[j-1]
+                state.calculate_velocity()
                 route.append(state)
             self.states.append(route)
 
+    ###
+    #delete state if norm(s_i, s_j) < epsilon
+    ###
     def eliminate_same_state(self):
-        repeat = 0
+        repeat_nums = 0
         for i in range(len(self.states)):
-            tmp_rt = []
+            accessed = []
             delect = []
             for j in range(len(self.states[i])):
-                if np.array2string(self.states[i][j].rounded()[1]) not in tmp_rt:
-                    tmp_rt.append(np.array2string(self.states[i][j].rounded()[1]))
+                if np.array2string(self.states[i][j].rounded()) not in accessed:
+                    accessed.append(np.array2string(self.states[i][j].rounded()))
                 else:
-                    repeat += 1
+                    repeat_nums += 1
                     delect.append(j)
-            try:
-                delect.sort()
-                for k in reversed(delect):
-                    del self.states[i][k]
-            except:
+            if delect:
+                self.states[i] = [self.states[i][k] for k in range(len(self.states[i])) if k not in delect]
+            else:
                 print('no same state in route %d'%i)
-        print('repeat:%d'%repeat)
+        print('repeat:%d'%repeat_nums)
+        with open(LOG_PATH, 'a') as f:
+            f.write('repeat:%d\n'%repeat_nums)
 
-    def resampling(self, position=0, velocity=0, threshold=10):
-        eliminate = 0
-        for i in range(len(self.states)):
-            delect = []
-            prev = []
-            for j in range(len(self.states[i])):
-                near = 0
-                for rt in self.states:
-                    for state in rt:
-                        if self.states[i][j].calculate_distance(state)[0] < position and self.states[i][j].calculate_distance(state)[1] < velocity:
-                            near += 1
-                if np.random.uniform(0, near) > threshold:
-                    delect.append(j)
-                    if j != 0:
-                        prev.append(j-1)
-                    for o in reversed(range(len(prev))):
-                        if prev[o] in delect:
-                            del prev[o]
-                    eliminate += 1
-            try:
-                print('eliminate:%d'%eliminate)
-                delect.sort()
-                for m in reversed(prev):
-                    self.states[i][m].next = np.zeros((10, 3))
-                for k in reversed(delect):
-                    del self.states[i][k]
-            except:
-                print('no state delected in resampling')
+        return repeat_nums
 
-    def find_mean_distance(self):
-        # states = self.create_states()
-        position_distances = 0
-        velocity_distances = 0
-        for route in self.states:
-            for i in range(len(route)-1):
-                dp, dv = route[i].calculate_distance(route[i+1])
-                position_distances += dp
-                velocity_distances += dv
-        mean_pos_dis = position_distances / self.length_list[self.number-1]
-        mean_velo_dis = velocity_distances / self.length_list[self.number-1]
+    ###
+    #reject sampling
+    ###
+    def resampling(self, connected, threshold=10):
+        if np.random.uniform(0, len(connected)) > threshold:
+            return True
+        else:
+            return False
 
-        return mean_pos_dis, mean_velo_dis
-
-    def create_roadmap_matrix(self):
-        self.create_states()
-        self.eliminate_same_state()
-        mp, mv = self.find_mean_distance()
-        self.resampling(position=mp,velocity=mv)
+    ###
+    #use matrix connect roadmap and resampling
+    ###
+    def create_roadmap_matrix_and_resampling(self, data):
+        self.create_states(data)
+        decrease = self.eliminate_same_state()
+        self.resampling()
         roadmap_list = []
         route_list = []
         next = []
-        print('creating roadmap')
+        delect = []
         cnt = 0
-        rt = -1
-        for route in self.states:
-            rt += 1
-            for state in route:
-                print('creating roadmap:%d/%d'%(cnt, self.length_list[self.number-1]))
+        print('creating roadmap')
+        nums = self.length_list[self.number-1] - decrease)
+
+        for i in range(len(self.states)):
+            for j in range(len(self.states[i])):
+
+                np.array2string(self.states[i][j].rounded())
+                print('creating roadmap:%d/%d (approximate)'%(cnt, nums)
+                roadmap_list.append((i,j))
+                route_list.append(i)
+                connected = []
+
+                for k in range(len(self.states)):
+                    for l in range(len(self.states[k])):
+                        if self.states[i][j].connect(self.states[k][l].state, threshold):
+                            connected.append((k,l))
+
+                if self.resampling(connected, threshold):
+                    delect.append(cnt)
+                elif j == len(self.states[i])-1:
+                    pass
+                elif (i,j+1) not in connected:
+                    connected.append((i,j+1))
+                else:
+                    pass
+                print('%d states connected', len(connected))
+                next.append(connected)
                 cnt += 1
-                roadmap_list.append(np.array2string(state.rounded()[1]))
-                route_list.append(rt)
-                tmp = []
-                tmp.append(state.rounded()[2])
-                for route2 in self.states:
-                    for state2 in route2:
-                        if state.connect(state2, mp, mv) and all((state2.rounded()[1] != x).any() for x in tmp):
-                            tmp.append(state2.rounded()[1])
-                print(len(tmp))
-                next.append(tmp)
+
+        with open(CONNECT_PATH, 'w') as f:
+            f.wirte(str(list(map(lambda x: len(x), next))))
+
+        print('%d states delected due to resampling!')
+        with open(LOG_PATH, 'a') as f:
+            f.write('%d states delected due to resampling!\n')
+
+        ###
+        #check if delected state in the connection list of other state
+        ###
+        delected_states = [roadmap_list[i] for i in delect]
+        for i in range(len(next)):
+            next[i] = [next[i][j] for j in range(len(next[i])) if next[i][j] not in delected_states]
+
+        ###
+        #delect states that should be resampled
+        ###
+        roadmap_list = [roadmap_list[i] for i in range(len(roadmap_list)) if i not in delect]
+        route_list = [route_list[i] for i in range(len(route_list)) if i not in delect]
+        next = [next[i] for i in range(len(next)) if i not in delect]
+
+        ###
+        #connect states in matrix
+        ###
         roadmap = lil_matrix((len(roadmap_list), len(roadmap_list)))
         print('calculating roadmap matrix')
         cnt = 0
-        for i in range(len(roadmap_list)):
+        successed = False
+
+        def printf():
+            if successed == True:
+                return 0
+            timer = threading.Timer(10, printf)
+            timer.start()
             print('calculating roadmap matrix:%d/%d'%(cnt,len(roadmap_list)))
+
+        timer = threading.Timer(10, printf)
+        timer.start()
+
+        for i in range(len(next)):
             cnt += 1
             for j in range(len(next[i])):
-                if np.any(next[i][j] != np.zeros((10,3))):
-                    idx = roadmap_list.index(np.array2string(next[i][j]))
-                    roadmap[i,idx] = 1
-                else:
-                    pass
-
+                idx = roadmap_list.index(next[i][j])
+                roadmap[i,idx] = 1
+        successed = True
+        roadmap_list = list(map(lambda i,j: self.states[i][j].rounded(), *zip(*roadmap_list)))
         return roadmap, roadmap_list, route_list
 
     def eliminate_isolated_state_matrix(self, roadmap, roadmap_list, route_list):
@@ -196,16 +232,17 @@ class Roadmap(object):
             row = np.where(np.logical_not(np.in1d(row, delete)))[0]
             roadmap = roadmap[row,:]
             roadmap = roadmap[:,row]
-            for i in reversed(range(len(delete))):
-                del roadmap_list[i]
-                del route_list[i]
-        print('%d dots deleted because of isolated dot'%(dot))
+            roadmap_list = [roadmap_list[i] for i in range(len(roadmap_list)) if i not in delect]
+            route_list = [route_list[i] for i in range(len(route_list)) if i not in delect]
+        print('after %d loops, %d dots deleted because of isolated dot'%(loop, dot))
+        with open(LOG_PATH, 'a') as f:
+            f.write('after %d loops, %d dots deleted because of isolated dot\n'%(loop, dot))
 
         return roadmap, roadmap_list, route_list
 
-
-    def create_roadmap(self):
-        self.create_states()
+        ###################### slow method ###################################
+    def create_roadmap(self, data):
+        self.create_states(data)
         self.eliminate_same_state()
         mp, mv = self.find_mean_distance()
         self.resampling(position=mp,velocity=mv)
@@ -285,6 +322,7 @@ class Roadmap(object):
         print('------end of processing------')
 
         return roadmap
+        ###################### slow method ###################################
 
     def convert_matrix2dict(self, roadmap, roadmap_list, route_list):
         roadmap_dic = {}
@@ -298,13 +336,13 @@ class Roadmap(object):
 
         return roadmap
 
-    def save_roadmap(self, path, matrix=False):
+    def save_roadmap(self, path, matrix=False, data):
         if matrix:
-            roadmap, roadmap_list, route_list = self.create_roadmap_matrix()
+            roadmap, roadmap_list, route_list = self.create_roadmap_matrix(data)
             roadmap, roadmap_list, route_list = self.eliminate_isolated_state_matrix(roadmap, roadmap_list, route_list)
             roadmap = self.convert_matrix2dict(roadmap, roadmap_list, route_list)
         else:
-            roadmap = self.create_roadmap()
+            roadmap = self.create_roadmap(data)
             roadmap = self.eliminate_isolated_states(roadmap)
         roadmap = json.dumps(roadmap)
         with open(path, 'w') as f:
@@ -312,13 +350,17 @@ class Roadmap(object):
         global successed
         successed = True
         print('successed save')
+        with open(LOG_PATH, 'a') as f:
+            f.write('successed save')
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='create roadmap by dict (or matrix)')
     parser.add_argument('-m', '--matrix', dest='matrix', type=bool,
                         help='create roadmap by matrix')
     args = parser.parse_args()
     matrix = args.matrix
+
     JOINT_NAME = [''] * 10
     JOINT_NAME[0] = 'Upper Body'
     JOINT_NAME[1] = 'Lower Body Scaled'
@@ -333,29 +375,35 @@ if __name__ == '__main__':
 
     ROADMAP = {}
     successed = False
+    timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     PATH = '/home/fan/generate-motion-from-roadmap/rotation/'
+    LOG_PATH = '/home/fan/generate-motion-from-roadmap/logs/log'
+    CONNECT_PATH = '/home/fan/generate-motion-from-roadmap/logs/connect/{0}'.format(timenow)
     dirs = os.listdir(PATH)
     data = []
     length = []
 
+    with open(LOG_PATH, 'a') as f:
+        f.write('\n-----------------------------------\n{0}\n-----------------------------------\n\n'.format(timenow))
+
     for files in dirs:
         with open(PATH + files, 'r') as f:
-            f_read = f.readlines()
-            length.append(len(f_read))
-            for line in f_read:
-                tmplist = []
-                line = re.split('[,\s]+',line)
+            fr = f.readlines()
+            length.append(int(math.ceil(len(fr)/3.)))
+            for i in range(0, len(fr), 3):
+                frame = []
+                line = re.split('[,\s]+',fr[i])
                 if '' in line:
                     line.remove('')
                 else:
                     pass
-                for i in range(0, len(line), 3):
+                for j in range(0, len(line), 3):
                     joint = []
-                    joint.append(float(line[i]))
-                    joint.append(float(line[i+1]))
-                    joint.append(float(line[i+2]))
-                    tmplist.append(joint)
-                data.append(tmplist)
+                    joint.append(float(line[j]))
+                    joint.append(float(line[j+1]))
+                    joint.append(float(line[j+2]))
+                    frame.append(joint)
+                data.append(frame)
 
-    roadmap = Roadmap(data, length)
-    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', matrix)
+    roadmap = Roadmap(length)
+    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', matrix, data)

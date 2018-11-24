@@ -1,0 +1,602 @@
+<html lang="en">
+	<head>
+		<title>MMD motion regeneration</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+		</style>
+	</head>
+
+	<body>
+		<div id="btn" style="position:absolute;left:30px;top: 30px;">
+			<button type="button" id="start" style="border-radius:8px;width:100px;height:25px;">START</button>
+			<button type="button" id="stop" style="border-radius:8px;width:100px;height:25px;display:none;">STOP</button>
+		</div>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/build/three.js"></script>
+
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/libs/mmdparser.min.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/libs/ammo.js"></script>
+
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/loaders/TGALoader.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/loaders/MMDLoader.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/effects/OutlineEffect.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/animation/CCDIKSolver.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/animation/MMDPhysics.js"></script>
+
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/controls/OrbitControls.js"></script>
+
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/Detector.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/libs/dat.gui.min.js"></script>
+		<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+		<script>
+
+		</script>
+		<script id="updateMotion">
+			// send a request
+			var endloop = false;
+			function initiate() {
+				currentBtnR = document.getElementById("start");
+				currentBtnS = document.getElementById("stop");
+				currentBtnR.style.display = "none";
+				currentBtnS.style.display = "inline";
+				$.ajax({
+					url: '/initate',
+					success: function(res){
+						console.log(res);
+						download(res);
+						var tmp = {
+							name: res,
+							isMoving: true,
+							files: [ 'static/vmd/'+ res +'.vmd' ]
+						};
+						motionParams.push(tmp);
+						setTimeout(function(){
+							mmdloop();
+						},3000)
+						updateMotion();
+					}
+				})
+			}
+
+			function mmdloop(){
+				$.ajax({
+					url: '/gene_motion',
+					success: function(res){
+						console.log(res);
+						download(res);
+						var tmp = {
+							name: res,
+							isMoving: true,
+							files: [ 'static/vmd/'+ res +'.vmd' ]
+						};
+						motionParams.push(tmp);
+						if(endloop){
+							return;
+						}else{
+							setTimeout(function(){
+								mmdloop();
+							},3000)
+						// updateMotion();
+						}
+					}
+				})
+			}
+
+			function auto_delete(){
+				setTimeout(function(){
+					motionParams.shift();
+					auto_delete();
+				},4000)
+			}
+
+			function stop(){
+				currentBtnR = document.getElementById("start");
+				currentBtnS = document.getElementById("stop");
+				currentBtnR.style.display = "inline";
+				currentBtnS.style.display = "none";
+				endloop = true;
+				setTimeout(function(){
+					motionParams = [];
+					helper.setAnimations(mesh);
+					mesh.mixer.stopAllAction();
+				},4000)
+			}
+			document.getElementById("start").addEventListener('click', function(){initiate();});
+			document.getElementById("stop").addEventListener('click', function(){stop();});
+
+			var container;
+
+			var scene;
+			var camera;
+
+			var renderer;
+			var effect;
+
+			var mesh;
+			var renderTarget;
+
+			var blinkMorphName = 'まばたき';
+			var blinkVmd = {
+				metadata: {
+					name: 'blink',
+					coordinateSystem: 'right',
+					morphCount: 11,
+					cameraCount: 0,
+					motionCount: 0
+				},
+				morphs: [
+					{ frameNum:   0, morphName: blinkMorphName, weight: 0.0 },
+					{ frameNum:  10, morphName: blinkMorphName, weight: 0.0 },
+					{ frameNum:  15, morphName: blinkMorphName, weight: 1.0 },
+					{ frameNum:  20, morphName: blinkMorphName, weight: 0.0 },
+					{ frameNum:  40, morphName: blinkMorphName, weight: 0.0 },
+					{ frameNum:  43, morphName: blinkMorphName, weight: 1.0 },
+					{ frameNum:  46, morphName: blinkMorphName, weight: 0.0 },
+					{ frameNum:  49, morphName: blinkMorphName, weight: 0.0 },
+					{ frameNum:  52, morphName: blinkMorphName, weight: 1.0 },
+					{ frameNum:  55, morphName: blinkMorphName, weight: 0.0 },
+					{ frameNum: 200, morphName: blinkMorphName, weight: 0.0 },
+				],
+				cameras: [],
+				motions: []
+			};
+			var poseParams = [
+				{
+					name: 'basic',
+					file: 'static/vpd/makoto_basic.vpd'
+				}
+			];
+
+			var helper;
+			var modelParams = [
+				{
+					name: 'miku',
+					file: 'https://cdn.rawgit.com/mrdoob/three.js/r87/examples/models/mmd/miku/miku_v2.pmd',
+					position: new THREE.Vector3( 0, -15,  0 )
+				}
+			];
+
+			var motionParams = [];
+
+			var cnt = 0;
+
+			var poses = {};
+
+			var ready = false;
+
+			var textureLoader = new THREE.TextureLoader();
+
+			var clock = new THREE.Clock();
+
+			var onProgress = function ( xhr ) {
+				if ( xhr.lengthComputable ) {
+					var percentComplete = xhr.loaded / xhr.total * 100;
+					console.log( Math.round(percentComplete, 2) + '% downloaded' );
+				}
+			};
+
+			var onError = function ( xhr ) {
+			};
+
+			helper = new THREE.MMDHelper();
+			var mesh = helper.meshes[ 0 ];
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				// cameras
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.y = 0
+				camera.up.y = 1
+				camera.position.z = 15;
+
+				var controls = new THREE.OrbitControls( camera );
+				controls.minPolarAngle = 1; // radians
+				controls.maxPolarAngle = 2; // radians
+
+				controls.minAzimuthAngle = - Infinity; // radians
+				controls.maxAzimuthAngle = Infinity; // radians
+
+				// scene
+
+				scene = new THREE.Scene();
+
+				// lights
+
+				var ambient = new THREE.AmbientLight( 0x444444 );
+				scene.add( ambient );
+
+				var directionalLight = new THREE.DirectionalLight( 0x666666 );
+				directionalLight.position.set( -1, 1, 1 ).normalize();
+				scene.add( directionalLight );
+
+				// renderer
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				//renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor( new THREE.Color( 0XFFFFFF ) );
+				container.appendChild( renderer.domElement );
+
+				effect = new THREE.OutlineEffect( renderer );
+
+				renderTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
+
+				// model
+
+				loader = new THREE.MMDLoader();
+
+				loadModels( function () {
+
+					miku = mesh;
+
+					loadVpds( mesh, function () {
+
+						helper.poseAsVpd( mesh, poses[ 'basic' ] );
+
+						loadVmds( mesh, function () {
+
+							// removeBlinkFromMorphAnimations( mesh );
+
+							loader.pourVmdIntoModel( mesh, blinkVmd, 'blink' );
+
+							helper.setAnimation( mesh );
+
+							for ( var i = 0; i < motionParams.length; i++ ) {
+
+								var param = motionParams[ i ];
+
+								var name = param.name;
+								mesh.mixer.clipAction( name ).stop();
+								// mesh.mixer.clipAction( name ).loop = THREE.LoopOnce;
+								// mesh.mixer.clipAction( name + 'Morph' ).weight = 0.0;
+								// startMotion( mesh, name );
+
+
+							}
+
+							// mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).play();
+							// mesh.mixer.clipAction( name ).loop = THREE.LoopOnce;
+							// mesh.mixer.clipAction( name ).clampWhenFinished = true;
+
+							// createDictionary( mesh );
+							startBlink( mesh );
+
+							ready = true;
+
+						} );
+
+					} );
+
+				} );
+				// startBlink(mesh);
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function download(res){
+
+				var tmp = {
+					name: res,
+					isMoving: true,
+					files: [ 'static/vmd/'+ res +'.vmd' ]
+				};
+
+				loader.loadVmds( tmp.files, function ( vmd ) {
+
+					loader.pourVmdIntoModel( mesh, vmd, res );
+
+				}, onProgress, onError );
+
+				// mesh.mixer.clipAction( res ).stop();
+
+			}
+
+			function	updateMotion(){
+
+				// motionParams = [];
+				// motionParams.push(tmp);
+
+				// var mesh = helper.meshes[0];
+
+				// helper.setAnimation( mesh );
+				// mesh.mixer.stopAllAction();
+				//
+				// loadoneVmd(mesh, cnt, function(){
+				// 	console.log('out of index');
+				// });
+				// mesh.mixer.clipAction( motionParams[cnt].name ).play();
+				// mesh.mixer.clipAction( motionParams[cnt].name ).loop = THREE.LoopOnce;
+				// mesh.mixer.clipAction( motionParams[cnt].name ).clampWhenFinished = true;
+				//
+				// startBlink( mesh );
+				// cnt ++;
+				setTimeout(function(){
+					helper.setAnimation( mesh );
+					mesh.mixer.stopAllAction();
+
+					loadoneVmd(mesh, cnt, function(){
+						console.log('out of index');
+					});
+					mesh.mixer.clipAction( motionParams[cnt].name ).play();
+					mesh.mixer.clipAction( motionParams[cnt].name ).loop = THREE.LoopOnce;
+					mesh.mixer.clipAction( motionParams[cnt].name ).clampWhenFinished = true;
+
+					startBlink( mesh );
+					cnt ++;
+					updateMotion();
+					// mesh.mixer.stopAllAction();
+					// for ( var i = 0; i < motionParams.length; i++ ) {
+					//
+					// 	var param = motionParams[ i ];
+					//
+					// 	var name = param.name;
+					// 	mesh.mixer.clipAction( name ).stop();
+					//
+					// }
+					// motionParams.shift();
+				},4000)
+
+				// while(i < motionParams.length){
+				// 	loadVmds( mesh, function () {
+				//
+				// 		// helper.setAnimation( mesh );
+				//
+				// 		mesh.mixer.stopAllAction();
+				//
+				// 		mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).play();
+				// 		mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).loop = THREE.LoopOnce;
+				// 		mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).clampWhenFinished = true;
+				//
+				// 		startBlink( mesh );
+				//
+				// 		ready = true;
+				//
+				// 	} );
+				// }
+
+				animate();
+
+
+			}
+
+			function loadModels ( callback ) {
+
+				function load ( index ) {
+
+					if ( index >= modelParams.length ) {
+
+						callback();
+						return;
+
+					}
+
+					var param = modelParams[ index ];
+
+					loader.loadModel( param.file, function ( object ) {
+
+						mesh = object;
+						mesh.position.y = -16.1;
+
+						helper.add( mesh );
+						helper.setPhysics( mesh );
+
+						scene.add( mesh );
+						ringing = new THREE.PolarGridHelper( 50, 10 );
+						ringing.position.y = -16;
+						scene.add( ringing );
+
+						load( index + 1 );
+
+					}, onProgress, onError );
+
+				}
+
+				load( 0 );
+
+			}
+
+			function loadVmds ( mesh, callback ) {
+
+				function load ( index ) {
+
+					if ( index >= motionParams.length ) {
+
+						callback();
+						return;
+
+					}
+
+					var param = motionParams[ index ];
+
+					loader.loadVmds( param.files, function ( vmd ) {
+
+						loader.pourVmdIntoModel( mesh, vmd, param.name );
+
+						load( index + 1 );
+
+					}, onProgress, onError );
+
+				}
+
+				load( 0 );
+
+			}
+
+			function loadoneVmd ( mesh, index, callback ) {
+
+				function load ( index ) {
+
+					if ( index >= motionParams.length ) {
+
+						callback();
+						return;
+
+					}
+
+					var param = motionParams[ index ];
+
+					loader.loadVmds( param.files, function ( vmd ) {
+
+						loader.pourVmdIntoModel( mesh, vmd, param.name );
+
+					}, onProgress, onError );
+
+				}
+
+				load(index);
+
+			}
+
+			function loadVpds ( mesh, callback ) {
+
+				function load ( index ) {
+
+					if ( index >= poseParams.length ) {
+
+						callback();
+						return;
+
+					}
+
+					var param = poseParams[ index ];
+
+					loader.loadVpd( param.file, function ( vpd ) {
+
+						poses[ param.name ] = vpd;
+
+						load( index + 1 );
+
+					}, onProgress, onError );
+
+				}
+
+				load( 0 );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				effect.setSize( window.innerWidth, window.innerHeight );
+				renderTarget.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function getLength( p1, p2 ) {
+
+			     return Math.sqrt( Math.pow( p1.x - p2.x, 2.0 ) + Math.pow( p1.y - p2.y, 2.0 ) + Math.pow( p1.z - p2.z, 2.0 ) );
+
+			}
+
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				update();
+				render();
+
+			}
+
+			function update() {
+
+				if ( ! ready ) return;
+
+				var delta = clock.getDelta();
+
+				helper.animate( delta );
+
+			}
+
+			function render() {
+
+				if ( ready ) {
+
+					// pass : render model
+
+					mesh.visible = true;
+
+					effect.render( scene, camera );
+
+
+					// just in case restore the parameters
+
+					renderer.autoClear = true;
+
+					mesh.visible = true;
+
+				} else {
+
+					renderer.render( scene, camera );
+
+				}
+
+
+			}
+
+			function startBlink ( mesh ) {
+
+				mesh.mixer.clipAction( 'blinkMorph' ).play();
+
+			}
+
+			function stopBlink ( mesh ) {
+
+				mesh.mixer.clipAction( 'blinkMorph' ).stop();
+
+			}
+
+			function loadVpds ( mesh, callback ) {
+				function load ( index ) {
+					if ( index >= poseParams.length ) {
+						callback();
+						return;
+					}
+					var param = poseParams[ index ];
+					loader.loadVpd( param.file, function ( vpd ) {
+						poses[ param.name ] = vpd;
+						load( index + 1 );
+					}, onProgress, onError );
+				}
+				load( 0 );
+			}
+
+			function startMotion ( mesh, key ) {
+
+				var name = key;
+				mesh.mixer.clipAction( name ).play();
+
+			}
+
+
+			function removeBlinkFromMorphAnimations ( mesh ) {
+				var index = mesh.morphTargetDictionary[ blinkMorphName ];
+				if ( index === undefined ) {
+					return;
+				}
+				for ( var i = 0; i < mesh.geometry.animations.length; i++ ) {
+					var tracks = mesh.geometry.animations[ i ].tracks;
+					for ( var j = 0; j < tracks.length; j++ ) {
+						if ( tracks[ j ].name === ".morphTargetInfluences[" + index + "]" ) {
+							mesh.geometry.animations[ i ].tracks.splice( j, 1 );
+							break;
+						}
+					}
+				}
+			}
+
+		</script>
+
+	</body>
+</html>

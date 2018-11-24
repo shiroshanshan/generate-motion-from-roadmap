@@ -1,12 +1,14 @@
 import numpy as np
-from motion_generator import *
+from VmdCreator import *
 import csv
 import datetime
 import re
 import math
 import argparse
 import matplotlib.pyplot as plt
-from util import *
+from utils import *
+
+roadmap_array = {}
 
 class Roadmap(object):
 
@@ -45,7 +47,7 @@ class Roadmap(object):
         rotations = []
         print('vmd file generating')
         rotations.append(init_state)
-        frames = 900
+        frames = 120
         route = []
         for i in range(frames):
             print('%d/%d'%(i, frames))
@@ -90,6 +92,7 @@ class Roadmap(object):
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
         return rotations
 
+    ##################################### old version ##############################################
     def isolated_proportion(self):
         for state, connect in roadmap_array.items():
             if (len(connect[:-1]) == 2 or len(connect[:-1]) == 1) and self.one_way_state(state):
@@ -136,6 +139,8 @@ class Roadmap(object):
                 return True
         return False
 
+        ##################################################################
+
 class State(object):
 
     def __init__(self, state, connect):
@@ -145,6 +150,11 @@ class State(object):
     def calculate_distance(self, state):
         position_distance = np.linalg.norm(self.state-state)
         return position_distance
+
+with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as f:
+    roadmap = f.read()
+    roadmap = eval(roadmap)
+rdp = Roadmap()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='generate motion file from roadmap')
@@ -162,12 +172,11 @@ if __name__ == '__main__':
     with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as f:
         roadmap = f.read()
         roadmap = eval(roadmap)
-    roadmap_array = {}
     rdp = Roadmap()
     rdp.read_roadmap(roadmap)
     init_state = rdp.init_state()
     # rdp.isolated_proportion()
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    bone_csv_file = '/home/fan/Documents/model.csv'
+    bone_csv_file = '/home/fan/generate-motion-from-roadmap/model.csv'
     vmd_file = '/home/fan/generate-motion-from-roadmap/vmdfile/{0}.vmd'.format(timenow)
     states = rdp.motion_generation(init_state, vmd_file, bone_csv_file, plot, write)
