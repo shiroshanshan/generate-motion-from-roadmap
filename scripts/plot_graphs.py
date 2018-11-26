@@ -71,6 +71,8 @@ def normalize(x):
 
 def normalize_and_plot(idx):
     row = idx
+    rowb = idx * 2 + 1
+
     dvx = dvs[:, row, 0]
     dpx = dps[:, row, 0]
     dvx = normalize(dvx)
@@ -81,32 +83,65 @@ def normalize_and_plot(idx):
     dvy = normalize(dvy)
     dpy = normalize(dpy)
 
-    dvz = dvs[:, row, 2]
-    dpz = dps[:, row, 2]
+    dvz = dvs[:, rowb, 2]
+    dpz = dps[:, rowb, 2]
     dvz = normalize(dvz)
     dpz = normalize(dpz)
 
+    dvxb = dvs[:, rowb, 0]
+    dpxb = dps[:, rowb, 0]
+    dvxb = normalize(dvx)
+    dpxb = normalize(dpx)
+
+    dvyb = dvs[:, rowb, 1]
+    dpyb = dps[:, rowb, 1]
+    dvyb = normalize(dvy)
+    dpyb = normalize(dpy)
+
+    dvzb = dvs[:, rowb, 2]
+    dpzb = dps[:, rowb, 2]
+    dvzb = normalize(dvz)
+    dpzb = normalize(dpz)
+
     plt.figure(figsize=(20,20))
-    plt.subplot(221)
+    plt.subplot(321)
     plt.scatter(dvx, dpx, s=3)
     plt.title(JOINT_NAME[idx] + ' Pitch')
     plt.xlabel('dv')
     plt.ylabel('dp')
 
-    plt.subplot(222)
+    plt.subplot(322)
     plt.scatter(dvy, dpy, s=3)
     plt.title(JOINT_NAME[idx] + ' Yaw')
     plt.xlabel('dv')
     plt.ylabel('dp')
 
-    plt.subplot(223)
+    plt.subplot(323)
     plt.scatter(dvz, dpz, s=3)
     plt.title(JOINT_NAME[idx] + ' Roll')
     plt.xlabel('dv')
     plt.ylabel('dp')
 
-    # plt.rcParams['figure.figsize'] = (40.0, 40.0)
-    plt.savefig('/home/fan/generate-motion-from-roadmap/images/dp_dv/' + JOINT_NAME[idx] + '.jpg')
+    plt.subplot(324)
+    plt.scatter(dvxb, dpxb, s=3)
+    plt.title(JOINT_NAME[rowb] + ' Pitch')
+    plt.xlabel('dv')
+    plt.ylabel('dp')
 
-for i in range(10):
+    plt.subplot(325)
+    plt.scatter(dvyb, dpyb, s=3)
+    plt.title(JOINT_NAME[rowb] + ' Yaw')
+    plt.xlabel('dv')
+    plt.ylabel('dp')
+
+    plt.subplot(326)
+    plt.scatter(dvzb, dpzb, s=3)
+    plt.title(JOINT_NAME[rowb] + ' Roll')
+    plt.xlabel('dv')
+    plt.ylabel('dp')
+
+    # plt.rcParams['figure.figsize'] = (40.0, 40.0)
+    plt.savefig('/home/fan/generate-motion-from-roadmap/images/dp_dv/' + JOINT_NAME[idx] +'_' + JOINT_NAME[rowb] + '.jpg')
+
+for i in range(5):
     normalize_and_plot(i)

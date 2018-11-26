@@ -29,7 +29,7 @@
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/libs/dat.gui.min.js"></script>
 		<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
 		<script>
-
+			
 		</script>
 		<script id="updateMotion">
 			// send a request
@@ -254,18 +254,10 @@
 
 								var name = param.name;
 								mesh.mixer.clipAction( name ).stop();
-								// mesh.mixer.clipAction( name ).loop = THREE.LoopOnce;
-								// mesh.mixer.clipAction( name + 'Morph' ).weight = 0.0;
-								// startMotion( mesh, name );
-
 
 							}
 
-							// mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).play();
-							// mesh.mixer.clipAction( name ).loop = THREE.LoopOnce;
-							// mesh.mixer.clipAction( name ).clampWhenFinished = true;
 
-							// createDictionary( mesh );
 							startBlink( mesh );
 
 							ready = true;
@@ -303,23 +295,6 @@
 
 			function	updateMotion(){
 
-				// motionParams = [];
-				// motionParams.push(tmp);
-
-				// var mesh = helper.meshes[0];
-
-				// helper.setAnimation( mesh );
-				// mesh.mixer.stopAllAction();
-				//
-				// loadoneVmd(mesh, cnt, function(){
-				// 	console.log('out of index');
-				// });
-				// mesh.mixer.clipAction( motionParams[cnt].name ).play();
-				// mesh.mixer.clipAction( motionParams[cnt].name ).loop = THREE.LoopOnce;
-				// mesh.mixer.clipAction( motionParams[cnt].name ).clampWhenFinished = true;
-				//
-				// startBlink( mesh );
-				// cnt ++;
 				setTimeout(function(){
 					helper.setAnimation( mesh );
 					mesh.mixer.stopAllAction();
@@ -334,35 +309,9 @@
 					startBlink( mesh );
 					cnt ++;
 					updateMotion();
-					// mesh.mixer.stopAllAction();
-					// for ( var i = 0; i < motionParams.length; i++ ) {
-					//
-					// 	var param = motionParams[ i ];
-					//
-					// 	var name = param.name;
-					// 	mesh.mixer.clipAction( name ).stop();
-					//
-					// }
-					// motionParams.shift();
+
 				},4000)
 
-				// while(i < motionParams.length){
-				// 	loadVmds( mesh, function () {
-				//
-				// 		// helper.setAnimation( mesh );
-				//
-				// 		mesh.mixer.stopAllAction();
-				//
-				// 		mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).play();
-				// 		mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).loop = THREE.LoopOnce;
-				// 		mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).clampWhenFinished = true;
-				//
-				// 		startBlink( mesh );
-				//
-				// 		ready = true;
-				//
-				// 	} );
-				// }
 
 				animate();
 

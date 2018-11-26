@@ -240,110 +240,24 @@ class Roadmap(object):
 
         return roadmap, roadmap_list, route_list
 
-        ###################### slow method ###################################
-    def create_roadmap(self, data):
-        self.create_states(data)
-        self.eliminate_same_state()
-        mp, mv = self.find_mean_distance()
-        self.resampling(position=mp,velocity=mv)
-        roadmap = {}
-        cnt = 1
-        repeat = 0
-        error = []
-        for rt in range(len(self.states)):
-            for state in self.states[rt]:
-                print('start creating')
-                print('%d/%d'%(cnt, self.length_list[self.number-1]))
-                try:
-                    tmp = roadmap[np.array2string(state.rounded()[1])]
-                    print('error for repeating values')
-                    error.append(state.rounded()[1])
-                    repeat += 1
-                except:
-                    cnt += 1
-                    roadmap[np.array2string(state.rounded()[1])] = []
-                    if np.any(state.rounded()[2] != np.zeros((10, 3))):
-                        roadmap[np.array2string(state.rounded()[1])].append(np.array2string(state.rounded()[2]))
-                    for rt2 in self.states:
-                        for state2 in rt2:
-                            if state.connect(state2, mp, mv) and np.array2string(state2.rounded()[1]) not in roadmap[np.array2string(state.rounded()[1])]:
-                                roadmap[np.array2string(state.rounded()[1])].append(np.array2string(state2.rounded()[1]))
-
-                    print('%d state connected'%(len(roadmap[np.array2string(state.rounded()[1])])))
-                    roadmap[np.array2string(state.rounded()[1])].append(rt)
-                    print(roadmap[np.array2string(state.rounded()[1])])
-        print('mean velocity: %f'%mv)
-        print('mean position: %f'%mp)
-        print('repeat: %d'%repeat)
-        if repeat == 0:
-          print('no error')
-        else:
-          print('error for repeating values')
-
-        return roadmap
-
-    def eliminate_isolated_states(self, roadmap):
-        delect = []
-        change = True
-        out_loop = 0
-        inner_loop = 0
-        def printf():
-            if successed == True:
-                return 0
-            timer = threading.Timer(10, printf)
-            timer.start()
-            print('out loop:', out_loop)
-            print('inner_loop:', inner_loop)
-
-        timer = threading.Timer(10, printf)
-        timer.start()
-
-        while change == True:
-            out_loop += 1
-            change = False
-            inner_loop = 0
-            for state,connect in roadmap.items():
-                inner_loop += 1
-                count = 0
-                for item in connect[:-1]:
-                    if item not in delect:
-                        count += 1
-                if count == 1:
-                    delect.append(state)
-                    change = True
-        print('------start to delete isolated nodes------')
-        for state in delect:
-            del roadmap[state]
-        print('------start to delete redundancy data------')
-        for state,connect in roadmap.items():
-            for i in range(len(roadmap[state][:-1])):
-                if roadmap[state][i] in delect:
-                    del roadmap[state][i]
-        print('------end of processing------')
-
-        return roadmap
-        ###################### slow method ###################################
-
     def convert_matrix2dict(self, roadmap, roadmap_list, route_list):
         roadmap_dic = {}
         for i in range(len(roadmap_list)):
-            roadmap_dic[roadmap_list[i]] = []
+            state = np.array2string(self.states[roadmap_list[i]].state)
+            roadmap_dic[state] = []
             for j in range(len(roadmap_list)):
                 if roadmap[i,j] == 1:
-                    roadmap_dic[roadmap_list[i]].append(roadmap_list[j])
-            roadmap_dic[roadmap_list[i]].append(route_list[i])
-        roadmap = roadmap_dic
+                    connect = self.states[roadmap_list[j]].state.tolist()
+                    roadmap_dic[state].append(connect)
+            roadmap_dic[state].append(route_list[i])
 
-        return roadmap
+        return roadmap_dic
 
-    def save_roadmap(self, path, matrix=False, data):
-        if matrix:
-            roadmap, roadmap_list, route_list = self.create_roadmap_matrix(data)
-            roadmap, roadmap_list, route_list = self.eliminate_isolated_state_matrix(roadmap, roadmap_list, route_list)
-            roadmap = self.convert_matrix2dict(roadmap, roadmap_list, route_list)
-        else:
-            roadmap = self.create_roadmap(data)
-            roadmap = self.eliminate_isolated_states(roadmap)
+    def save_roadmap(self, path, data):
+        roadmap, roadmap_list, route_list = self.create_roadmap_matrix(data)
+        roadmap, roadmap_list, route_list = self.eliminate_isolated_state_matrix(roadmap, roadmap_list, route_list)
+        roadmap = self.convert_matrix2dict(roadmap, roadmap_list, route_list)
+
         roadmap = json.dumps(roadmap)
         with open(path, 'w') as f:
             f.write(roadmap)
@@ -406,4 +320,4 @@ if __name__ == '__main__':
                 data.append(frame)
 
     roadmap = Roadmap(length)
-    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', matrix, data)
+    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', data)

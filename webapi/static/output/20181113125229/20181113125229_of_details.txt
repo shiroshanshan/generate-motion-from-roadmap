@@ -1,0 +1,13 @@
+Input:/home/fan/webapi/workshop/static/unprocessed/20181113125229.png
+Input full path:/home/fan/webapi/workshop/static/unprocessed/20181113125229.png
+Camera parameters:602.344,602.344,283,366
+Output HOG:20181113125229.hog
+Output image:20181113125229.jpg
+Output aligned directory:20181113125229_aligned
+Output csv:20181113125229.csv
+Gaze: 1
+AUs: 1
+Landmarks 2D: 1
+Landmarks 3D: 1
+Pose: 1
+Shape parameters: 1

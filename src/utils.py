@@ -3,67 +3,40 @@ import numpy as np
 import math
 from scipy import signal
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
-def normalize(input_list):
-    sum = 0.
-    # ctn = True
-    for item in input_list:
-        sum += item
-    # if sum < 1:
-    #     ctn = False
-    print(sum)
-    return np.array(input_list)/sum
+def interpolation(data):
+    for i in range(data.shape[1]):
+        for j in range(data.shape[2]):
+            y = data[:,i,j]
+            x = np.arange(len(y))
+            f = interp1d(x,y,kind='cubic')
+            data[:,i,j] = f
+    return data
 
-def string2nparray(string):
-    string = re.split('\n\s+',string)
-    for i in range(len(string)):
-        string[i] = string[i].lstrip('[ ')
-        string[i] = string[i].rstrip(' ]')
-        string[i] = re.split('\s+', string[i])
-        for j in range(len(string[i])):
-            string[i][j] = float(string[i][j])
+def string2nparray(strings):
+    strings = re.split('\n\s+',strings)
+    strings = [strings[:10], strings[10:]]
+    for string in strings:
+        for i in range(len(string)):
+            string[i] = string[i].lstrip('[ ')
+            string[i] = string[i].rstrip(' ]')
+            string[i] = re.split('\s+', string[i])
+            for j in range(len(string[i])):
+                string[i][j] = float(string[i][j])
 
-    return np.array(string)
+    return np.array(strings)
 
-def select_policy(prev_states, one_way_states, state, next_states, number=100):
-    connect_num = len(next_states)
-    if len(prev_states) > number:
-        memo = prev_states[-number:]
-    elif len(prev_states) == 0:
-        choice = np.random.randint(0, connect_num)
-        return next_states[choice]
+def select_policy(next_states, policy):
+    if policy == 'random':
+        choices = [i for i in range(len(next)) if next[i]]
+        choice = choices[np.random.randint(0, len(choices))]
     else:
-        memo = prev_states
+        pass
 
-    possibility = []
-    for i in range(len(next_states)):
-        possibility.append(1.)
-    # for i in range(len(next_states)):
-    #     n = np.linalg.norm(next_states[i][0] - state[0])
-    #     possibility[i] = math.exp(-n)
-    for i in range(len(memo)):
-        for j in range(len(next_states)):
-            if np.all(memo[i] == next_states[j]):
-                possibility[j] = math.exp(-i)
-            else:
-                pass
+    return choice
 
-    possibility = normalize(possibility)
-    choice = np.random.choice(connect_num, 1, p=possibility)[0]
-
-    # while whether_in(next_states[choice], one_way_states):
-    #     choice = np.random.choice(connect_num, 1, p=possibility)[0]
-    #     print(next_states)
-    #     print(p)
-    return next_states[choice]
-
-def whether_in(nparray, nparrays):
-    for item in nparrays:
-        if np.all(item == nparray):
-            return True
-    return False
-
-def filter(data, fc=3):
+def filter(data, fc=4):
     # fps = 30
     # n = len(data)
     # dt = 1./fps
@@ -95,7 +68,6 @@ def filter(data, fc=3):
     t = np.arange(0, N*dt, dt)
     t = t[:N]
     freq = np.linspace(0, 1.0/dt, N)
-    data = np.array(data)
     for i in range(data.shape[1]):
         for j in range(data.shape[2]):
             f = data[:,i,j]
@@ -125,7 +97,7 @@ def showAnimCurves(animData, _plt):
 def plot_route_transfer(route,_plt):
     il = np.arange(0,(len(route)-0.001)/30.,1/30.)
     route = np.array(route)
-    _plt.plot(il, route, 'r', linewidth=0.5)
+    _plt.scatter(il, route, marker='_')
     return _plt
 
 def write_rotation_file(rotationfile,rotationlist):
