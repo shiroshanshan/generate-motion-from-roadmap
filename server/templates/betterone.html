@@ -5,12 +5,17 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
 		</style>
+		<link rel='stylesheet' href='{{ url_for('static', filename='css/main.css') }}'>
 	</head>
 
 	<body>
-		<div id="btn" style="position:absolute;left:30px;top: 30px;">
-			<button type="button" id="start" style="border-radius:8px;width:100px;height:25px;">START</button>
-			<button type="button" id="stop" style="border-radius:8px;width:100px;height:25px;display:none;">STOP</button>
+		<dic class="booth">
+			<video width="400" height="300" id="player" controls autoplay></video>
+		</dic>
+		<div id="btn" style="position:absolute;left:90%;top:30px;">
+			<button type="button" id="start" style="border-radius:8px;width:100px;height:25px;z-index:999;">START</button>
+			<button type="button" id="stop" style="border-radius:8px;width:100px;height:25px;display:none;z-index:999;">STOP</button>
+			<button type="button" id="capture" style="border-radius:8px;width:100px;height:25px;z-index:999;">CAPTURE</button>
 		</div>
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/build/three.js"></script>
 
@@ -28,11 +33,46 @@
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/Detector.js"></script>
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/libs/dat.gui.min.js"></script>
 		<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
-		<script>
-			
-		</script>
 		<script id="updateMotion">
-			// send a request
+			var current_motion_name;
+			//Video record and upload
+		  var player = document.getElementById('player');
+		  var captureButton = document.getElementById('capture');
+		  var videoTracks;
+
+		  var handleSuccess = function(stream) {
+		    // Attach the video stream to the video element and autoplay.
+		    player.srcObject = stream;
+		    // videoTracks = stream.getVideoTracks();
+		  };
+
+		  captureButton.addEventListener('click', function() {
+		    var blob = new Blob([player], {type: "image/jpeg"});
+
+				var formData = new FormData();
+			  formData.append("fname",current_motion_name);
+			  formData.append("data",blob);
+				$.ajax({
+				  type: 'POST',
+				  url: '/openface',
+					cache: false,
+				  data: formData,
+					processData: false,
+		      contentType: false,
+				  success: function(res){
+						console.log(res);
+					},
+				});
+
+		    // Stop all video streams.
+		    // videoTracks.forEach(function(track) {track.stop()});
+		  });
+
+		  navigator.mediaDevices.getUserMedia({video: true})
+		      .then(handleSuccess);
+
+
+			// send a request and start sampling from roadmap
 			var endloop = false;
 			function initiate() {
 				currentBtnR = document.getElementById("start");
@@ -57,7 +97,7 @@
 					}
 				})
 			}
-
+			// keep download motion files
 			function mmdloop(){
 				$.ajax({
 					url: '/gene_motion',
@@ -75,20 +115,13 @@
 						}else{
 							setTimeout(function(){
 								mmdloop();
-							},3000)
+							},4000)
 						// updateMotion();
 						}
 					}
 				})
 			}
-
-			function auto_delete(){
-				setTimeout(function(){
-					motionParams.shift();
-					auto_delete();
-				},4000)
-			}
-
+			// stop download motion file and update motion
 			function stop(){
 				currentBtnR = document.getElementById("start");
 				currentBtnS = document.getElementById("stop");
@@ -254,10 +287,18 @@
 
 								var name = param.name;
 								mesh.mixer.clipAction( name ).stop();
+								// mesh.mixer.clipAction( name ).loop = THREE.LoopOnce;
+								// mesh.mixer.clipAction( name + 'Morph' ).weight = 0.0;
+								// startMotion( mesh, name );
+
 
 							}
 
+							// mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).play();
+							// mesh.mixer.clipAction( name ).loop = THREE.LoopOnce;
+							// mesh.mixer.clipAction( name ).clampWhenFinished = true;
 
+							// createDictionary( mesh );
 							startBlink( mesh );
 
 							ready = true;
@@ -268,8 +309,6 @@
 
 				} );
 				// startBlink(mesh);
-
-				//
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
@@ -296,8 +335,9 @@
 			function	updateMotion(){
 
 				setTimeout(function(){
-					helper.setAnimation( mesh );
-					mesh.mixer.stopAllAction();
+					updateMotion();
+					// helper.setAnimation( mesh );
+					// mesh.mixer.stopAllAction();
 
 					loadoneVmd(mesh, cnt, function(){
 						console.log('out of index');
@@ -307,14 +347,23 @@
 					mesh.mixer.clipAction( motionParams[cnt].name ).clampWhenFinished = true;
 
 					startBlink( mesh );
-					cnt ++;
-					updateMotion();
+					// cnt ++;
 
+					// mesh.mixer.stopAllAction();
+					// for ( var i = 0; i < motionParams.length; i++ ) {
+					//
+					// 	var param = motionParams[ i ];
+					//
+					// 	var name = param.name;
+					// 	mesh.mixer.clipAction( name ).stop();
+					//
+					// }
+					delete mesh.geometry.animations[1];
+					mesh.geometry.animations.splice(1,1)
+					motionParams.shift();
 				},4000)
 
-
 				animate();
-
 
 			}
 

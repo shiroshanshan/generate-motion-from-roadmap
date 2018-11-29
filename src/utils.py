@@ -1,6 +1,7 @@
 import re
 import numpy as np
 import math
+import random
 from scipy import signal
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
@@ -108,3 +109,19 @@ def write_rotation_file(rotationfile,rotationlist):
                 rotationfile.write(',')
             else:
                 rotationfile.write('\n')
+
+def sample_new_route(connects, m=10):
+    if random.random() < math.exp(-len(connects)/m):
+        return True
+    else:
+        return False
+
+def sample_from_recorded_routes(connects):
+    possibilities = []
+    for i in range(len(connects)):
+        possibilities.append(connects[i][40]/connects[i][41])
+    possibilities = list(map(lambda x: math.exp(-x), possibilities))
+    s = sum(possibilities)
+    possibilities = [x/s for x in possibilities]
+
+    return connects[np.random.choice(np.arange(len(connects)),p=possibilities)]

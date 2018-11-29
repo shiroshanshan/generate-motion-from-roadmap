@@ -37,7 +37,7 @@ def openface():
     Imgfile = request.files['file']
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     Imgfile.save('/home/fan/generate-motion-from-roadmap/webapi/static/input/{0}.png'.format(timenow))
-
+    print(Imgfile)
     os.popen('~/OpenFace/build/bin/FaceLandmarkImg -f /home/fan/generate-motion-from-roadmap/webapi/static/input/{0}.png\
               -out_dir /home/fan/generate-motion-from-roadmap/webapi/static/output/{1}'.format(timenow, timenow)).readlines()
     try:
