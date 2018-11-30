@@ -70,7 +70,7 @@ def normalize(x):
     return (x - np.mean(x)) / np.std(x)
 
 def normalize_and_plot(idx):
-    row = idx
+    row = idx * 2
     rowb = idx * 2 + 1
 
     dvx = dvs[:, row, 0]
@@ -106,19 +106,19 @@ def normalize_and_plot(idx):
     plt.figure(figsize=(20,20))
     plt.subplot(321)
     plt.scatter(dvx, dpx, s=3)
-    plt.title(JOINT_NAME[idx] + ' Pitch')
+    plt.title(JOINT_NAME[row] + ' Pitch')
     plt.xlabel('dv')
     plt.ylabel('dp')
 
     plt.subplot(322)
     plt.scatter(dvy, dpy, s=3)
-    plt.title(JOINT_NAME[idx] + ' Yaw')
+    plt.title(JOINT_NAME[row] + ' Yaw')
     plt.xlabel('dv')
     plt.ylabel('dp')
 
     plt.subplot(323)
     plt.scatter(dvz, dpz, s=3)
-    plt.title(JOINT_NAME[idx] + ' Roll')
+    plt.title(JOINT_NAME[row] + ' Roll')
     plt.xlabel('dv')
     plt.ylabel('dp')
 
@@ -141,7 +141,7 @@ def normalize_and_plot(idx):
     plt.ylabel('dp')
 
     # plt.rcParams['figure.figsize'] = (40.0, 40.0)
-    plt.savefig('/home/fan/generate-motion-from-roadmap/images/dp_dv/' + JOINT_NAME[idx] +'_' + JOINT_NAME[rowb] + '.jpg')
+    plt.savefig('/home/fan/generate-motion-from-roadmap/images/dp_dv/' + JOINT_NAME[row] +'_' + JOINT_NAME[rowb] + '.jpg')
 
 for i in range(5):
     normalize_and_plot(i)

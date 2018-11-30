@@ -9,13 +9,14 @@ import threading
 import math
 import argparse
 import datetime
+from discriminator import discriminator
 
 ###
 #a object called state
 ###
 class State(object):
-    def __init__(self, roataion):
-        if type(rotation) == list:
+    def __init__(self, rotation):
+        if type(rotation) == np.ndarray:
             self.position = np.array(rotation)
             self.prev = None
             self.next = None
@@ -27,9 +28,9 @@ class State(object):
                 f.write('the argument need to be a list(frame)\n')
 
     def calculate_velocity(self):
-        if self.next == None:
+        if np.all(self.next == None):
             self.velocity = self.position - self.prev
-        elif self.prev == None:
+        elif np.all(self.prev == None):
             self.velocity = self.next - self.position
         else:
             self.velocity = (self.next - self.prev) / 2
@@ -42,8 +43,8 @@ class State(object):
         return position_difference, velocity_difference
 
     def connect(self, state, threshold):
-        confidence = discriminator(self.state, state)
-        if confidence > threshold:
+        confidence = discriminator(self.state, state, dif_mean, dif_std)
+        if confidence == True:
             return True
         else:
             return False
@@ -52,7 +53,7 @@ class State(object):
         idx, row, column = self.state.shape
         state = np.zeros((idx, row, column))
         for i in range(self.state.size):
-            state[i//30][i%30//column][i%column] = round(self.position.item(i),1)
+            state[i//30][i%30//column][i%30%column] = round(self.state.item(i),1)
         return state
 
 
@@ -71,6 +72,7 @@ class Roadmap(object):
     #initiate states
     ###
     def create_states(self, data):
+        global dif_mean, dif_std
         for i in range(self.number):
             if i == 0:
                 partition = data[:self.ends[i]]
@@ -81,7 +83,7 @@ class Roadmap(object):
                 state = State(partition[j])
                 if j == 0:
                     state.next = partition[j+1]
-                elif j == len(routes)-1:
+                elif j == len(partition)-1:
                     state.prev = partition[j-1]
                 else:
                     state.next = partition[j+1]
@@ -90,6 +92,14 @@ class Roadmap(object):
                 route.append(state)
             self.states.append(route)
 
+        differences = np.array([])
+        for i in range(len(self.states)):
+            for j in range(len(self.states[i]))[:-1]:
+                difference = np.array([*self.states[i][j].calculate_difference(self.states[i][j+1].position, self.states[i][j+1].velocity)])
+                np.append(differences, difference)
+        dif_mean = np.mean(differences)
+        dif_std = np.std(differences, axis=0)
+
     ###
     #delete state if norm(s_i, s_j) < epsilon
     ###
@@ -97,15 +107,15 @@ class Roadmap(object):
         repeat_nums = 0
         for i in range(len(self.states)):
             accessed = []
-            delect = []
+            delete = []
             for j in range(len(self.states[i])):
                 if np.array2string(self.states[i][j].rounded()) not in accessed:
                     accessed.append(np.array2string(self.states[i][j].rounded()))
                 else:
                     repeat_nums += 1
-                    delect.append(j)
-            if delect:
-                self.states[i] = [self.states[i][k] for k in range(len(self.states[i])) if k not in delect]
+                    delete.append(j)
+            if delete:
+                self.states[i] = [self.states[i][k] for k in range(len(self.states[i])) if k not in delete]
             else:
                 print('no same state in route %d'%i)
         print('repeat:%d'%repeat_nums)
@@ -128,62 +138,63 @@ class Roadmap(object):
     ###
     def create_roadmap_matrix_and_resampling(self, data):
         self.create_states(data)
-        decrease = self.eliminate_same_state()
-        self.resampling()
+        # decrease = self.eliminate_same_state()
+        ##test
+        decrease = 0
         roadmap_list = []
         route_list = []
         next = []
-        delect = []
+        delete = []
         cnt = 0
         print('creating roadmap')
-        nums = self.length_list[self.number-1] - decrease)
+        nums = self.ends[self.number-1] - decrease
 
         for i in range(len(self.states)):
             for j in range(len(self.states[i])):
 
                 np.array2string(self.states[i][j].rounded())
-                print('creating roadmap:%d/%d (approximate)'%(cnt, nums)
+                print('creating roadmap:%d/%d (approximate)'%(cnt, nums))
                 roadmap_list.append((i,j))
                 route_list.append(i)
                 connected = []
 
                 for k in range(len(self.states)):
                     for l in range(len(self.states[k])):
-                        if self.states[i][j].connect(self.states[k][l].state, threshold):
+                        if self.states[i][j].connect(self.states[k][l].state, 0):
                             connected.append((k,l))
 
-                if self.resampling(connected, threshold):
-                    delect.append(cnt)
+                if self.resampling(connected):
+                    delete.append(cnt)
                 elif j == len(self.states[i])-1:
                     pass
                 elif (i,j+1) not in connected:
                     connected.append((i,j+1))
                 else:
                     pass
-                print('%d states connected', len(connected))
+                print('%d states connected'%len(connected))
                 next.append(connected)
                 cnt += 1
 
         with open(CONNECT_PATH, 'w') as f:
-            f.wirte(str(list(map(lambda x: len(x), next))))
+            f.write(str(list(map(lambda x: len(x), next))))
 
-        print('%d states delected due to resampling!')
+        print('%d states deleted due to resampling!'%(len(delete)))
         with open(LOG_PATH, 'a') as f:
-            f.write('%d states delected due to resampling!\n')
+            f.write('%d states deleted due to resampling!\n'%(len(delete)))
 
         ###
-        #check if delected state in the connection list of other state
+        #check if deleted state in the connection list of other state
         ###
-        delected_states = [roadmap_list[i] for i in delect]
+        deleted_states = [roadmap_list[i] for i in delete]
         for i in range(len(next)):
-            next[i] = [next[i][j] for j in range(len(next[i])) if next[i][j] not in delected_states]
+            next[i] = [next[i][j] for j in range(len(next[i])) if next[i][j] not in deleted_states]
 
         ###
-        #delect states that should be resampled
+        #delete states that should be resampled
         ###
-        roadmap_list = [roadmap_list[i] for i in range(len(roadmap_list)) if i not in delect]
-        route_list = [route_list[i] for i in range(len(route_list)) if i not in delect]
-        next = [next[i] for i in range(len(next)) if i not in delect]
+        roadmap_list = [roadmap_list[i] for i in range(len(roadmap_list)) if i not in delete]
+        route_list = [route_list[i] for i in range(len(route_list)) if i not in delete]
+        next = [next[i] for i in range(len(next)) if i not in delete]
 
         ###
         #connect states in matrix
@@ -232,8 +243,8 @@ class Roadmap(object):
             row = np.where(np.logical_not(np.in1d(row, delete)))[0]
             roadmap = roadmap[row,:]
             roadmap = roadmap[:,row]
-            roadmap_list = [roadmap_list[i] for i in range(len(roadmap_list)) if i not in delect]
-            route_list = [route_list[i] for i in range(len(route_list)) if i not in delect]
+            roadmap_list = [roadmap_list[i] for i in range(len(roadmap_list)) if i not in delete]
+            route_list = [route_list[i] for i in range(len(route_list)) if i not in delete]
         print('after %d loops, %d dots deleted because of isolated dot'%(loop, dot))
         with open(LOG_PATH, 'a') as f:
             f.write('after %d loops, %d dots deleted because of isolated dot\n'%(loop, dot))
@@ -243,18 +254,19 @@ class Roadmap(object):
     def convert_matrix2dict(self, roadmap, roadmap_list, route_list):
         roadmap_dic = {}
         for i in range(len(roadmap_list)):
-            state = np.array2string(self.states[roadmap_list[i]].state)
+            state = np.array2string(roadmap_list[i])
             roadmap_dic[state] = []
             for j in range(len(roadmap_list)):
                 if roadmap[i,j] == 1:
-                    connect = self.states[roadmap_list[j]].state.tolist()
+                    connect = roadmap_list[j].tolist()
+                    print(connect)
                     roadmap_dic[state].append(connect)
             roadmap_dic[state].append(route_list[i])
 
         return roadmap_dic
 
     def save_roadmap(self, path, data):
-        roadmap, roadmap_list, route_list = self.create_roadmap_matrix(data)
+        roadmap, roadmap_list, route_list = self.create_roadmap_matrix_and_resampling(data)
         roadmap, roadmap_list, route_list = self.eliminate_isolated_state_matrix(roadmap, roadmap_list, route_list)
         roadmap = self.convert_matrix2dict(roadmap, roadmap_list, route_list)
 
@@ -318,6 +330,7 @@ if __name__ == '__main__':
                     joint.append(float(line[j+2]))
                     frame.append(joint)
                 data.append(frame)
+    data = np.array(data)
 
     roadmap = Roadmap(length)
     roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', data)
