@@ -7,13 +7,15 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
 def interpolation(data):
+    new_data = np.zeros((data.shape[0]*3, data.shape[1], data.shape[2]))
     for i in range(data.shape[1]):
         for j in range(data.shape[2]):
             y = data[:,i,j]
-            x = np.arange(len(y))
+            x = np.linspace(0, 120, num=40, endpoint=True)
             f = interp1d(x,y,kind='cubic')
-            data[:,i,j] = f
-    return data
+            x_new = np.linspace(0, 120, num=120, endpoint=True)
+            new_data[:,i,j] = f(x_new)
+    return new_data
 
 def string2nparray(strings):
     strings = re.split('\n\s+',strings)
@@ -30,7 +32,7 @@ def string2nparray(strings):
 
 def select_policy(next_states, policy):
     if policy == 'random':
-        choices = [i for i in range(len(next)) if next[i]]
+        choices = [i for i in range(len(next_states)) if next_states[i] == 1]
         choice = choices[np.random.randint(0, len(choices))]
     else:
         pass

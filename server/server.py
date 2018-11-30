@@ -7,6 +7,7 @@ import pandas as pd
 import datetime
 import os
 import json
+from gaze_deter import gaze_determinator
 
 app = Flask(__name__)
 
@@ -14,7 +15,7 @@ app = Flask(__name__)
 fname = None
 fv = 0
 fc = 0
-rdp.read_roadmap(roadmap, roadmap_dic)
+rdp.read_roadmap(roadmap, routes_dic)
 rdp.save_every_ten()
 bone_csv_file = '/home/fan/generate-motion-from-roadmap/model.csv'
 # app.register_blueprint(b)
@@ -83,7 +84,6 @@ def openface():
     return json.dumps(result)
 
 if __name__ == "__main__":
-    # app = make_app()
-    # app.jinja_env.auto_reload = True
-    # app.run(host='0.0.0.0', debug=True, port=5000, ssl_context='adhoc')
-    app.run(port=8008, debug=True)
+    app.jinja_env.auto_reload = True
+    app.run(host='0.0.0.0', debug=True, port=5000, ssl_context='adhoc')
+    # app.run(port=8008, debug=True)

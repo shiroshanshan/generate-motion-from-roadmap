@@ -203,4 +203,4 @@ def set_groove(bone_csv_file):
         for n in range(len(bone_frame_dic["センター"])):
             bone_frame_dic["グルーブ"][n].position = QVector3D(0, 0, 0)
 
-return is_groove
+    return is_groove

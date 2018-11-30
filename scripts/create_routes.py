@@ -4,8 +4,8 @@ with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as
     roadmap = f.read()
     roadmap = eval(roadmap)
 routes_dic = {}
-for i in raneg(len(roadmap)):
+for i in range(len(roadmap)):
     routes_dic[i] = []
-roadmap_dic = json.dumps(roadmap_dic)
+routes_dic = json.dumps(routes_dic)
 with open('/home/fan/generate-motion-from-roadmap/saved/routes.json', 'w') as f:
-    f.write(roadmap_dic)
+    f.write(routes_dic)

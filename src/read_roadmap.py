@@ -21,20 +21,21 @@ class Roadmap(object):
         self.routes_dic = {}
 
     def read_roadmap(self, string_dic, string_routes_dic):
-        roadmap_dic = {}
         self.length = len(string_dic)
-        self.matrix = lil_matrix(self.length, self.length)
+        self.matrix = lil_matrix((self.length, self.length))
+        print('number of states: ',self.length)
         idx = 0
 
         for key, value in string_routes_dic.items():
             self.routes_dic[int(key)] = value
 
         for key, value in string_dic.items():
-            for i in range(len(value[:-1])):
-                self.matrix[idx][string_dic.keys().index(value[i])] = 1
-            idx += 1
             self.states.append(string2nparray(key))
             self.route.append(value[-1])
+
+            for i in range(len(value[:-1])):
+                self.matrix[idx,list(string_dic.keys()).index(np.array2string(np.array(value[i])))] = 1
+            idx += 1
 
         print('read roadmap successful')
 
@@ -45,22 +46,22 @@ class Roadmap(object):
 
     def motion_generation(self, init_state, vmd_file, bone_csv_file, plot, write):
         init_state = self.init_state()
-        rotations = np.array([])
+        rotations = []
         routes = []
         print('vmd file generating')
-        rotations = np.append(rotations, init_state)
+        rotations.append(init_state)
         frames = 40
         init_states_stack.append(init_state)
 
         if sample_new_route(self.routes_dic[init_state]):
-            for i in range(frames):
-                print('frames:%d/%d'%(i, frames))
-                next = self.matrix[init_state, :].todense()
+            for i in range(frames-1):
+                print('frames:%d/%d'%(i, frames-1))
+                next = np.array(self.matrix[init_state, :].todense()).flatten()
 
                 if 1 in next:
-                    routes.append(self.route[idx])
-                    init_state = self.states[select_policy(next, 'random')]
-                    rotations = np.append(rotations, init_state)
+                    routes.append(self.route[init_state])
+                    init_state = select_policy(next, 'random')
+                    rotations.append(init_state)
                 else:
                     print('no connected state')
                     break
@@ -116,22 +117,22 @@ class Roadmap(object):
             plt.ylabel('Route(#)')
             fig_name = 'images/route_transfer.png'
             plt.savefig(fig_name)
-
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
+        print('vmd file successfully saved')
 
         return rotations
 
-        def save_every_ten(self):
-            def save_every_ten_min():
-                with open('/home/fan/generate-motion-from-roadmap/routes.json', 'w') as f:
-                    routes_dic = json.dumps(self.routes_dic)
-                    f.write(routes_dic)
-                timer = threading.Timer(600, save_every_ten_min())
-                timer.start()
-                print('successfully saved')
-
-            timer = threading.Timer(600, save_every_ten_min())
+    def save_every_ten(self):
+        def save_every_ten_min():
+            with open('/home/fan/generate-motion-from-roadmap/routes.json', 'w') as f:
+                routes_dic = json.dumps(self.routes_dic)
+                f.write(routes_dic)
+            timer = threading.Timer(600, save_every_ten_min)
             timer.start()
+            print('routes dictionary successfully saved')
+
+        timer = threading.Timer(600, save_every_ten_min())
+        timer.start()
 
 with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as f:
     roadmap = f.read()
@@ -139,9 +140,9 @@ with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as
 
 rdp = Roadmap()
 
-with open('/home/fan/generate-motion-from-roadmap/routes.json', 'r') as f:
+with open('/home/fan/generate-motion-from-roadmap/saved/routes.json', 'r') as f:
     routes_dic = f.read()
-    routes_dic = eval(roadmap_dic)
+    routes_dic = eval(routes_dic)
 
 init_states_stack = []
 routes_stack = []
@@ -155,6 +156,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     plot = args.plot
     write = args.write
+    with open('/home/fan/generate-motion-from-roadmap/saved/routes.json', 'r') as f:
+        routes_dic = f.read()
+        routes_dic = eval(routes_dic)
+
+    init_states_stack = []
+    routes_stack = []
 
     with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as f:
         roadmap = f.read()

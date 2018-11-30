@@ -1,6 +1,0 @@
-Input:/home/fan/webapi/workshop/static/unprocessed/20181121205203.png
-Input full path:/home/fan/webapi/workshop/static/unprocessed/20181121205203.png
-Camera parameters:751.042,751.042,484,358
-Output HOG:20181121205203.hog
-Output image:20181121205203.jpg
-Output aligned directory:20181121205203_aligned

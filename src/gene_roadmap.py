@@ -140,9 +140,9 @@ class Roadmap(object):
     ###
     def create_roadmap_matrix_and_resampling(self, data):
         self.create_states(data)
-        # decrease = self.eliminate_same_state()
+        decrease = self.eliminate_same_state()
         ##test
-        decrease = 0
+        # decrease = 0
         roadmap_list = []
         route_list = []
         next = []
@@ -165,14 +165,12 @@ class Roadmap(object):
                         if self.states[i][j].connect(self.states[k][l], 0):
                             connected.append((k,l))
 
+                if j != len(self.states[i])-1 and (i,j+1) not in connected:
+                    connected.append((i,j+1))
+
                 if self.resampling(connected):
                     delete.append(cnt)
-                elif j == len(self.states[i])-1:
-                    pass
-                elif (i,j+1) not in connected:
-                    connected.append((i,j+1))
-                else:
-                    pass
+
                 print('%d states connected'%len(connected))
                 next.append(connected)
                 cnt += 1
@@ -189,8 +187,7 @@ class Roadmap(object):
         ###
         deleted_states = [roadmap_list[i] for i in delete]
         for i in range(len(next)):
-            next[i] = [next[i][j] for j in range(len(next[i])) if next[i][j] not in deleted_states]
-
+            next[i] = [item for item in next[i] if item not in deleted_states]
         ###
         #delete states that should be resampled
         ###
@@ -237,7 +234,7 @@ class Roadmap(object):
             delete = []
             s = roadmap.sum(axis=1)
             for i in range(len(s)):
-                if s[i] == 1:
+                if s[i] == 1 or s[i] == 0:
                     change = True
                     delete.append(i)
             dot += len(delete)
@@ -250,7 +247,6 @@ class Roadmap(object):
         print('after %d loops, %d dots deleted because of isolated dot'%(loop, dot))
         with open(LOG_PATH, 'a') as f:
             f.write('after %d loops, %d dots deleted because of isolated dot\n'%(loop, dot))
-
         return roadmap, roadmap_list, route_list
 
     def convert_matrix2dict(self, roadmap, roadmap_list, route_list):
