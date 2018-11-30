@@ -43,7 +43,8 @@ class State(object):
         return position_difference, velocity_difference
 
     def connect(self, state, threshold):
-        confidence = discriminator(self.state, state, dif_mean, dif_std)
+        dp, dv = self.calculate_difference(state.position, state.velocity)
+        confidence = discriminator(dp, dv, dif_mean, dif_std)
         if confidence == True:
             return True
         else:
@@ -92,12 +93,13 @@ class Roadmap(object):
                 route.append(state)
             self.states.append(route)
 
-        differences = np.array([])
+        differences = []
         for i in range(len(self.states)):
             for j in range(len(self.states[i]))[:-1]:
                 difference = np.array([*self.states[i][j].calculate_difference(self.states[i][j+1].position, self.states[i][j+1].velocity)])
-                np.append(differences, difference)
-        dif_mean = np.mean(differences)
+                differences.append(difference)
+        differences = np.array(differences)
+        dif_mean = np.mean(differences, axis=0)
         dif_std = np.std(differences, axis=0)
 
     ###
@@ -160,7 +162,7 @@ class Roadmap(object):
 
                 for k in range(len(self.states)):
                     for l in range(len(self.states[k])):
-                        if self.states[i][j].connect(self.states[k][l].state, 0):
+                        if self.states[i][j].connect(self.states[k][l], 0):
                             connected.append((k,l))
 
                 if self.resampling(connected):
@@ -259,7 +261,6 @@ class Roadmap(object):
             for j in range(len(roadmap_list)):
                 if roadmap[i,j] == 1:
                     connect = roadmap_list[j].tolist()
-                    print(connect)
                     roadmap_dic[state].append(connect)
             roadmap_dic[state].append(route_list[i])
 
