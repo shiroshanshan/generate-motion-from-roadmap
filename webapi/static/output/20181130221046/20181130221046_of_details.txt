@@ -1,0 +1,13 @@
+Input:/home/fan/generate-motion-from-roadmap/webapi/static/input/20181130221046.png
+Input full path:/home/fan/generate-motion-from-roadmap/webapi/static/input/20181130221046.png
+Camera parameters:796.354,796.354,512,380.5
+Output HOG:20181130221046.hog
+Output image:20181130221046.jpg
+Output aligned directory:20181130221046_aligned
+Output csv:20181130221046.csv
+Gaze: 1
+AUs: 1
+Landmarks 2D: 1
+Landmarks 3D: 1
+Pose: 1
+Shape parameters: 1
