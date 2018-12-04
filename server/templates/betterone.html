@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
 		</style>
+		<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 		<link rel='stylesheet' href='{{ url_for('static', filename='css/main.css') }}'>
 	</head>
 
@@ -15,7 +16,8 @@
 		<div id="btn" style="position:absolute;left:90%;top:30px;">
 			<button type="button" id="start" style="border-radius:8px;width:100px;height:25px;z-index:999;">START</button>
 			<button type="button" id="stop" style="border-radius:8px;width:100px;height:25px;display:none;z-index:999;">STOP</button>
-			<button type="button" id="capture" style="border-radius:8px;width:100px;height:25px;z-index:999;">CAPTURE</button>
+			<!-- <button type="button" id="capture" style="border-radius:8px;width:100px;height:25px;z-index:999;">CAPTURE</button> -->
+			<canvas id='snapshot' width=320 height=240 style="display:none;"></canvas>
 		</div>
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/build/three.js"></script>
 
@@ -37,8 +39,9 @@
 			var current_motion_name;
 			//Video record and upload
 		  var player = document.getElementById('player');
-		  var captureButton = document.getElementById('capture');
+		  // var captureButton = document.getElementById('capture');
 		  var videoTracks;
+			var snapshotCanvas = document.getElementById('snapshot');
 
 		  var handleSuccess = function(stream) {
 		    // Attach the video stream to the video element and autoplay.
@@ -46,27 +49,32 @@
 		    // videoTracks = stream.getVideoTracks();
 		  };
 
-		  captureButton.addEventListener('click', function() {
-		    var blob = new Blob([player], {type: "image/jpeg"});
-
+			function postImg(Img){
 				var formData = new FormData();
-			  formData.append("fname",current_motion_name);
-			  formData.append("data",blob);
+				formData.append("fname",current_motion_name);
+				formData.append("data",Img);
 				$.ajax({
-				  type: 'POST',
-				  url: '/openface',
+					type: 'POST',
+					url: '/openface',
 					cache: false,
-				  data: formData,
+					data: formData,
 					processData: false,
-		      contentType: false,
-				  success: function(res){
+					contentType: false,
+					success: function(res){
 						console.log(res);
+						shot();
 					},
 				});
+			}
+
+			function shot(){
+				var context = snapshot.getContext('2d');
+				context.drawImage(player, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+				snapshotCanvas.toBlob(postImg, 'image/jpeg');
+			};
 
 		    // Stop all video streams.
 		    // videoTracks.forEach(function(track) {track.stop()});
-		  });
 
 		  navigator.mediaDevices.getUserMedia({video: true})
 		      .then(handleSuccess);
@@ -91,6 +99,7 @@
 						};
 						motionParams.push(tmp);
 						setTimeout(function(){
+							shot();
 							mmdloop();
 						},3000)
 						updateMotion();

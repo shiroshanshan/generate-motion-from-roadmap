@@ -30,9 +30,9 @@ def string2nparray(strings):
 
     return np.array(strings)
 
-def select_policy(next_states, policy):
+def select_policy(init, next_states, policy):
     if policy == 'random':
-        choices = [i for i in range(len(next_states)) if next_states[i] == 1]
+        choices = [i for i in range(len(next_states)) if next_states[i] == 1 and i != init]
         choice = choices[np.random.randint(0, len(choices))]
     else:
         pass

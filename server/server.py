@@ -1,13 +1,14 @@
 import sys
 sys.path.append('/home/fan/generate-motion-from-roadmap/src')
 from read_roadmap import *
-from flask import Flask, render_template, g, current_app, Blueprint, request
-from werkzeug.local import LocalProxy
+from flask import Flask, render_template, g, request
 import pandas as pd
 import datetime
 import os
 import json
 from gaze_deter import gaze_determinator
+import logging
+
 
 app = Flask(__name__)
 
@@ -38,30 +39,33 @@ def gene_motion():
     global last_state
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     vmd_file = '/home/fan/generate-motion-from-roadmap/server/static/vmd/{0}.vmd'.format(timenow)
-    last_state = rdp.motion_generation(last_state, vmd_file, bone_csv_file, False, False)
+    last_state = rdp.motion_generation(last_state, vmd_file, bone_csv_file, False, False)[-1]
     return timenow
 
 @app.route('/openface', methods=['POST'])
 def openface():
     global fname, fv, fc
     result = {}
-    Imgfile = request.files['file']
+    Imgfile = request.files['data']
 
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    Imgfile.save('/home/fan/generate-motion-from-roadmap/static/input/{0}.png'.format(timenow))
+    Imgfile.save('/home/fan/generate-motion-from-roadmap/server/static/input/{0}.jpeg'.format(timenow))
 
-    os.popen('~/OpenFace/build/bin/FaceLandmarkImg -f /home/fan/generate-motion-from-roadmap/static/input/{0}.png\
-              -out_dir /home/fan/generate-motion-from-roadmap/static/output/{1}'.format(timenow, timenow)).readlines()
+    os.popen('~/OpenFace/build/bin/FaceLandmarkImg -f /home/fan/generate-motion-from-roadmap/server/static/input/{0}.jpeg\
+              -out_dir /home/fan/generate-motion-from-roadmap/server/static/output/{1}'.format(timenow, timenow)).readlines()
     try:
-        df = pd.read_csv('/home/fan/generate-motion-from-roadmap/static/output/{0}/{1}.csv'.format(timenow, timenow), sep=',')
+        df = pd.read_csv('/home/fan/generate-motion-from-roadmap/server/static/output/{0}/{1}.csv'.format(timenow, timenow), sep=',')
     except:
-        return 'error'
+        return 'no gaze detected'
 
     value = df[[' gaze_0_x', ' gaze_0_y', ' gaze_0_z', ' gaze_1_x', ' gaze_1_y', ' gaze_1_z']].values
-    result['left_eye'] = str(value[:][:3])
-    result['right_eye'] = str(value[:][3:])
-    result['timenow'] = timenow
+    result['left_eye'] = value[0][:3]
+    result['right_eye'] = value[0][3:]
     looking = gaze_determinator(result)
+    if looking:
+        print('gaze detection: gaze detected')
+    else:
+        print('gaze detection: no gaze detected')
 
     if fname != request.form['fname']:
         if fname != None:
@@ -81,9 +85,11 @@ def openface():
         fc += 1
         fv += looking
 
-    return json.dumps(result)
+    return 'finished'
 
 if __name__ == "__main__":
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
     app.jinja_env.auto_reload = True
     app.run(host='0.0.0.0', debug=True, port=5000, ssl_context='adhoc')
     # app.run(port=8008, debug=True)

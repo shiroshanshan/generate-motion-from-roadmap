@@ -13,7 +13,7 @@ def discriminator(state_dp, state_dv, mean, std):
               [9, 10, 9], [9, 9, 8]]]
 
     maximum = np.array(maximum)
-    maximum = maximum / 2.5
+    maximum = maximum / 10.
     minimum = -maximum
 
     difference = np.array([state_dp, state_dv])

@@ -129,7 +129,7 @@ class Roadmap(object):
     ###
     #reject sampling
     ###
-    def resampling(self, connected, threshold=10):
+    def resampling(self, connected, threshold=100):
         if np.random.uniform(0, len(connected)) > threshold:
             return True
         else:

@@ -28,8 +28,12 @@ class Roadmap(object):
 
         for key, value in string_routes_dic.items():
             self.routes_dic[int(key)] = value
-
+            cnt = 0
         for key, value in string_dic.items():
+            if len(value) <= 1:
+                cnt += 1
+                print(cnt)
+
             self.states.append(string2nparray(key))
             self.route.append(value[-1])
 
@@ -45,7 +49,7 @@ class Roadmap(object):
         return choice
 
     def motion_generation(self, init_state, vmd_file, bone_csv_file, plot, write):
-        init_state = self.init_state()
+        # init_state = self.init_state()
         rotations = []
         routes = []
         print('vmd file generating')
@@ -55,12 +59,11 @@ class Roadmap(object):
 
         if sample_new_route(self.routes_dic[init_state]):
             for i in range(frames-1):
-                print('frames:%d/%d'%(i, frames-1))
+                # print('frames:%d/%d'%(i, frames-1))
                 next = np.array(self.matrix[init_state, :].todense()).flatten()
-
                 if 1 in next:
                     routes.append(self.route[init_state])
-                    init_state = select_policy(next, 'random')
+                    init_state = select_policy(init_state, next, 'random')
                     rotations.append(init_state)
                 else:
                     print('no connected state')
@@ -68,63 +71,68 @@ class Roadmap(object):
         else:
             rotations = sample_from_recorded_routes(self.routes_dic[init_state])
 
-        if write == True:
-            with open('readed_data/raw_data.txt','w') as f:
-                write_rotation_file(f, rotations)
+        rotations_num = rotations
+        timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        os.mkdir('/home/fan/generate-motion-from-roadmap/readed/{0}'.format(timenow))
 
-        if plot == True:
-            plt.figure(1)
-            raw_data_image = showAnimCurves(rotations, plt)
-            plt.xlabel('Time(Second)')
-            plt.ylabel('Rotations(Degree)')
-            fig_name = 'images/raw_data.png'
-            plt.savefig(fig_name)
+
+        with open('readed/{0}/rotations.txt'.format(timenow),'w') as f:
+            f.write(str(rotations))
 
         routes_stack.append(rotations)
         rotations = np.array(list(map(lambda x: self.states[x][0], rotations)))
+
+        with open('readed/{0}/raw_data.txt'.format(timenow),'w') as f:
+            write_rotation_file(f, rotations)
+
+        os.mkdir('/home/fan/generate-motion-from-roadmap/images/{0}'.format(timenow))
+        plt.figure(1)
+        raw_data_image = showAnimCurves(rotations, plt)
+        plt.xlabel('Time(Second)')
+        plt.ylabel('Rotations(Degree)')
+        fig_name = 'readed/{0}/raw_data.png'.format(timenow)
+        plt.savefig(fig_name)
+
         rotations = interpolation(rotations)
 
-        if write == True:
-            with open('readed_data/interpolated.txt','w') as f:
-                write_rotation_file(f, rotations)
+        with open('readed/{0}/interpolated.txt'.format(timenow),'w') as f:
+            write_rotation_file(f, rotations)
 
-        if plot == True:
-            plt.figure(2)
-            raw_data_image = showAnimCurves(rotations, plt)
-            plt.xlabel('Time(Second)')
-            plt.ylabel('Rotations(Degree)')
-            fig_name = 'images/interpolated.png'
-            plt.savefig(fig_name)
+        plt.figure(2)
+        raw_data_image = showAnimCurves(rotations, plt)
+        plt.xlabel('Time(Second)')
+        plt.ylabel('Rotations(Degree)')
+        fig_name = 'readed/{0}/interpolated.png'.format(timenow)
+        plt.savefig(fig_name)
 
         rotations = filter(rotations)
         rotations = list(rotations)
 
-        if write == True:
-            with open('readed_data/smoothed.txt','w') as f:
-                write_rotation_file(f, rotations)
+        with open('readed/{0}/smoothed.txt'.format(timenow),'w') as f:
+            write_rotation_file(f, rotations)
 
-        if plot == True:
-            plt.figure(3)
-            smoothed_image = showAnimCurves(rotations, plt)
-            plt.xlabel('Time(Second)')
-            plt.ylabel('Rotations(Degree)')
-            fig_name = 'images/smoothed.png'
-            plt.savefig(fig_name)
+        plt.figure(3)
+        smoothed_image = showAnimCurves(rotations, plt)
+        plt.xlabel('Time(Second)')
+        plt.ylabel('Rotations(Degree)')
+        fig_name = 'readed/{0}/smoothed.png'.format(timenow)
+        plt.savefig(fig_name)
 
-            plt.figure(4)
-            raw_data_image = plot_route_transfer(route, plt)
-            plt.xlabel('Time(Second)')
-            plt.ylabel('Route(#)')
-            fig_name = 'images/route_transfer.png'
-            plt.savefig(fig_name)
+        plt.figure(4)
+        raw_data_image = plot_route_transfer(self.route, plt)
+        plt.xlabel('Time(Second)')
+        plt.ylabel('Route(#)')
+        fig_name = 'readed/{0}/route_transfer.png'.format(timenow)
+        plt.savefig(fig_name)
+
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
         print('vmd file successfully saved')
 
-        return rotations
+        return rotations_num
 
     def save_every_ten(self):
         def save_every_ten_min():
-            with open('/home/fan/generate-motion-from-roadmap/routes.json', 'w') as f:
+            with open('/home/fan/generate-motion-from-roadmap/saved/routes.json', 'w') as f:
                 routes_dic = json.dumps(self.routes_dic)
                 f.write(routes_dic)
             timer = threading.Timer(600, save_every_ten_min)
@@ -172,5 +180,5 @@ if __name__ == '__main__':
     # rdp.isolated_proportion()
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     bone_csv_file = '/home/fan/generate-motion-from-roadmap/model.csv'
-    vmd_file = '/home/fan/generate-motion-from-roadmap/vmdfile/{0}.vmd'.format(timenow)
+    vmd_file = '/home/fan/generate-motion-from-roadmap/test/vmdfile/{0}.vmd'.format(timenow)
     states = rdp.motion_generation(init_state, vmd_file, bone_csv_file, plot, write)
