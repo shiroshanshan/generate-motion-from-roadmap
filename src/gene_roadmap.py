@@ -2,6 +2,7 @@ import json
 import os
 import re
 import numpy as np
+from scipy import io
 from scipy.stats import gaussian_kde
 from scipy.sparse import lil_matrix, csr_matrix, csc_matrix
 from sklearn.metrics.pairwise import cosine_similarity
@@ -265,11 +266,15 @@ class Roadmap(object):
     def save_roadmap(self, path, data):
         roadmap, roadmap_list, route_list = self.create_roadmap_matrix_and_resampling(data)
         roadmap, roadmap_list, route_list = self.eliminate_isolated_state_matrix(roadmap, roadmap_list, route_list)
-        roadmap = self.convert_matrix2dict(roadmap, roadmap_list, route_list)
-
-        roadmap = json.dumps(roadmap)
-        with open(path, 'w') as f:
-            f.write(roadmap)
+        # roadmap = self.convert_matrix2dict(roadmap, roadmap_list, route_list)
+        io.savemat(path + "roadmap", {"roadmap":roadmap})
+        with open(path + 'states.txt', 'w') as f:
+            f.write(str(np.array(roadmap_list).tolist()))
+        with open(path + 'routes.txt', 'w') as f:
+            f.write(str(route_list))
+        # roadmap = json.dumps(roadmap)
+        # with open(path, 'w') as f:
+        #     f.write(roadmap)
         global successed
         successed = True
         print('successed save')
@@ -330,4 +335,4 @@ if __name__ == '__main__':
     data = np.array(data)
 
     roadmap = Roadmap(length)
-    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', data)
+    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/', data)

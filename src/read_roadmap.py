@@ -1,6 +1,7 @@
 import numpy as np
 from VmdCreator import *
 from scipy.sparse import lil_matrix, csr_matrix, csc_matrix
+from scipy import io
 import csv
 import datetime
 import re
@@ -17,30 +18,30 @@ class Roadmap(object):
 
     def __init__(self):
         self.states = []
-        self.route = []
         self.routes_dic = {}
+        self.init_states_stack = []
+        self.routes_stack = []
 
-    def read_roadmap(self, string_dic, string_routes_dic):
-        self.length = len(string_dic)
-        self.matrix = lil_matrix((self.length, self.length))
+    def read_roadmap(self, matrix, states_list, routes_num, str_routes_dic):
+        self.length = len(states_list)
+        self.matrix = matrix
+        self.routes = routes_num
         print('number of states: ',self.length)
         idx = 0
 
-        for key, value in string_routes_dic.items():
+        for key, value in str_routes_dic.items():
             self.routes_dic[int(key)] = value
-            cnt = 0
-        for key, value in string_dic.items():
-            if len(value) <= 1:
-                cnt += 1
-                print(cnt)
 
-            self.states.append(string2nparray(key))
-            self.route.append(value[-1])
+        for i in range(len(states_list)):
+            self.states.append(np.array(states_list[i]))
 
-            for i in range(len(value[:-1])):
-                self.matrix[idx,list(string_dic.keys()).index(np.array2string(np.array(value[i])))] = 1
-            idx += 1
-
+        ################## test ########################
+        for i in range(self.length):
+            next = np.array(self.matrix[i, :].todense()).flatten()
+            if not 1 in next:
+                print('nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn')
+                print(i,"th state don't have any connected state!")
+        ################## test ########################
         print('read roadmap successful')
 
     def init_state(self):
@@ -52,17 +53,17 @@ class Roadmap(object):
         # init_state = self.init_state()
         rotations = []
         routes = []
-        print('vmd file generating')
+        # print('vmd file generating')
         rotations.append(init_state)
         frames = 40
-        init_states_stack.append(init_state)
+        self.init_states_stack.append(init_state)
 
         if sample_new_route(self.routes_dic[init_state]):
             for i in range(frames-1):
                 # print('frames:%d/%d'%(i, frames-1))
                 next = np.array(self.matrix[init_state, :].todense()).flatten()
                 if 1 in next:
-                    routes.append(self.route[init_state])
+                    routes.append(self.routes[init_state])
                     init_state = select_policy(init_state, next, 'random')
                     rotations.append(init_state)
                 else:
@@ -71,7 +72,7 @@ class Roadmap(object):
         else:
             rotations = sample_from_recorded_routes(self.routes_dic[init_state])
 
-        rotations_num = rotations
+        last = rotations[-1]
         timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         os.mkdir('/home/fan/generate-motion-from-roadmap/readed/{0}'.format(timenow))
 
@@ -79,7 +80,8 @@ class Roadmap(object):
         with open('readed/{0}/rotations.txt'.format(timenow),'w') as f:
             f.write(str(rotations))
 
-        routes_stack.append(rotations)
+        self.routes_stack.append(rotations)
+        ## [0] => position, [1] => velocity
         rotations = np.array(list(map(lambda x: self.states[x][0], rotations)))
 
         with open('readed/{0}/raw_data.txt'.format(timenow),'w') as f:
@@ -106,10 +108,9 @@ class Roadmap(object):
         plt.savefig(fig_name)
 
         rotations = filter(rotations)
-        rotations = list(rotations)
 
         with open('readed/{0}/smoothed.txt'.format(timenow),'w') as f:
-            write_rotation_file(f, rotations)
+            write_rotation_file(f, list(rotations))
 
         plt.figure(3)
         smoothed_image = showAnimCurves(rotations, plt)
@@ -119,7 +120,7 @@ class Roadmap(object):
         plt.savefig(fig_name)
 
         plt.figure(4)
-        raw_data_image = plot_route_transfer(self.route, plt)
+        raw_data_image = plot_route_transfer(routes, plt)
         plt.xlabel('Time(Second)')
         plt.ylabel('Route(#)')
         fig_name = 'readed/{0}/route_transfer.png'.format(timenow)
@@ -128,32 +129,33 @@ class Roadmap(object):
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
         print('vmd file successfully saved')
 
-        return rotations_num
+        return last
 
     def save_every_ten(self):
         def save_every_ten_min():
-            with open('/home/fan/generate-motion-from-roadmap/saved/routes.json', 'w') as f:
+            with open('/home/fan/generate-motion-from-roadmap/roadmap/saved/routes.json', 'w') as f:
                 routes_dic = json.dumps(self.routes_dic)
                 f.write(routes_dic)
             timer = threading.Timer(600, save_every_ten_min)
             timer.start()
             print('routes dictionary successfully saved')
 
-        timer = threading.Timer(600, save_every_ten_min())
+        timer = threading.Timer(600, save_every_ten_min)
         timer.start()
 
-with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as f:
-    roadmap = f.read()
-    roadmap = eval(roadmap)
+roadmap = io.loadmat("/home/fan/generate-motion-from-roadmap/roadmap/roadmap")["roadmap"]
 
-rdp = Roadmap()
-
-with open('/home/fan/generate-motion-from-roadmap/saved/routes.json', 'r') as f:
+with open('/home/fan/generate-motion-from-roadmap/roadmap/states.txt', 'r') as f:
+    states = f.read()
+    states = eval(states)
+with open('/home/fan/generate-motion-from-roadmap/roadmap/routes.txt', 'r') as f:
+    routes = f.read()
+    routes = eval(routes)
+with open('/home/fan/generate-motion-from-roadmap/roadmap/saved/routes.json', 'r') as f:
     routes_dic = f.read()
     routes_dic = eval(routes_dic)
 
-init_states_stack = []
-routes_stack = []
+rdp = Roadmap()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='generate motion file from roadmap')
@@ -164,18 +166,21 @@ if __name__ == '__main__':
     args = parser.parse_args()
     plot = args.plot
     write = args.write
-    with open('/home/fan/generate-motion-from-roadmap/saved/routes.json', 'r') as f:
+
+    roadmap = io.loadmat("/home/fan/generate-motion-from-roadmap/roadmap/roadmap")["roadmap"]
+
+    with open('/home/fan/generate-motion-from-roadmap/roadmap/states.txt', 'r') as f:
+        states = f.read()
+        states = eval(states)
+    with open('/home/fan/generate-motion-from-roadmap/roadmap/routes.txt', 'r') as f:
+        routes = f.read()
+        routes = eval(routes)
+    with open('/home/fan/generate-motion-from-roadmap/roadmap/saved/routes.json', 'r') as f:
         routes_dic = f.read()
         routes_dic = eval(routes_dic)
 
-    init_states_stack = []
-    routes_stack = []
-
-    with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as f:
-        roadmap = f.read()
-        roadmap = eval(roadmap)
     rdp = Roadmap()
-    rdp.read_roadmap(roadmap, routes_dic)
+    rdp.read_roadmap(roadmap, states, routes, routes_dic)
     init_state = rdp.init_state()
     # rdp.isolated_proportion()
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")

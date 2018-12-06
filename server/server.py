@@ -16,7 +16,7 @@ app = Flask(__name__)
 fname = None
 fv = 0
 fc = 0
-rdp.read_roadmap(roadmap, routes_dic)
+rdp.read_roadmap(roadmap, states, routes, routes_dic)
 rdp.save_every_ten()
 bone_csv_file = '/home/fan/generate-motion-from-roadmap/model.csv'
 # app.register_blueprint(b)
@@ -31,7 +31,7 @@ def initate():
     init_state = rdp.init_state()
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     vmd_file = '/home/fan/generate-motion-from-roadmap/server/static/vmd/{0}.vmd'.format(timenow)
-    last_state = rdp.motion_generation(init_state, vmd_file, bone_csv_file, False, False)[-1]
+    last_state = rdp.motion_generation(init_state, vmd_file, bone_csv_file, False, False)
     return timenow
 
 @app.route("/gene_motion", methods=['GET'])
@@ -39,7 +39,7 @@ def gene_motion():
     global last_state
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     vmd_file = '/home/fan/generate-motion-from-roadmap/server/static/vmd/{0}.vmd'.format(timenow)
-    last_state = rdp.motion_generation(last_state, vmd_file, bone_csv_file, False, False)[-1]
+    last_state = rdp.motion_generation(last_state, vmd_file, bone_csv_file, False, False)
     return timenow
 
 @app.route('/openface', methods=['POST'])
@@ -69,8 +69,8 @@ def openface():
 
     if fname != request.form['fname']:
         if fname != None:
-            tmp_key = init_states_stack.pop(0)
-            tmp_value = routes_stack.pop(0)
+            tmp_key = rdp.init_states_stack.pop(0)
+            tmp_value = rdp.routes_stack.pop(0)
             tmp_connects = [x[:40] for x in rdp.routes_dic[tmp_key]]
             if tmp_key in tmp_connects:
                 k = tmp_connects.index(tmp_key)

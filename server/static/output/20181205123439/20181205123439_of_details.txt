@@ -1,0 +1,13 @@
+Input:/home/fan/generate-motion-from-roadmap/server/static/input/20181205123439.jpeg
+Input full path:/home/fan/generate-motion-from-roadmap/server/static/input/20181205123439.jpeg
+Camera parameters:250,250,160,120
+Output HOG:20181205123439.hog
+Output image:20181205123439.jpg
+Output aligned directory:20181205123439_aligned
+Output csv:20181205123439.csv
+Gaze: 1
+AUs: 1
+Landmarks 2D: 1
+Landmarks 3D: 1
+Pose: 1
+Shape parameters: 1

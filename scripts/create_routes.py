@@ -1,10 +1,10 @@
 import json
 
-with open('/home/fan/generate-motion-from-roadmap/roadmap/roadmap.json', 'r') as f:
-    roadmap = f.read()
-    roadmap = eval(roadmap)
+with open('/home/fan/generate-motion-from-roadmap/roadmap/states.txt', 'r') as f:
+    states = f.read()
+    states = eval(states)
 routes_dic = {}
-for i in range(len(roadmap)):
+for i in range(len(states)):
     routes_dic[i] = []
 print('create routes_dic: done, {0} states in roadmap'.format(len(routes_dic)))
 routes_dic = json.dumps(routes_dic)
