@@ -62,9 +62,9 @@ class Roadmap(object):
             for i in range(frames-1):
                 # print('frames:%d/%d'%(i, frames-1))
                 next = np.array(self.matrix[init_state, :].todense()).flatten()
-                if 1 in next:
+                if np.any(next):
                     routes.append(self.routes[init_state])
-                    init_state = select_policy(init_state, next, 'random')
+                    init_state = select_policy(init_state, next, 'no self')
                     rotations.append(init_state)
                 else:
                     print('no connected state')

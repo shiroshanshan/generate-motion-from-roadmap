@@ -1,24 +1,19 @@
 import numpy as np
+import math
 
-def discriminator(state_dp, state_dv, mean, std):
-    maximum = [[[7, 10, 8], [8, 10, 10],
-              [10, 10, 8], [10, 10, 8],
-              [9, 10, 10], [9, 10, 10],
-              [8, 9, 9], [9, 9, 8],
-              [9, 10, 9], [9, 9, 8]],
-              [[8, 10, 9], [8, 10, 10],
-              [10, 10, 8], [10, 10, 9],
-              [9, 10, 10], [9, 10, 10],
-              [8, 9, 9], [9, 9, 8],
-              [9, 10, 9], [9, 9, 8]]]
-
-    maximum = np.array(maximum)
-    maximum = maximum / 10.
-    minimum = -maximum
+def discriminator(state_dp, state_dv, mean, std, threshold):
 
     difference = np.array([state_dp, state_dv])
-    normlized_difference = (difference - mean) / std
-    less = normlized_difference < maximum
-    more = normlized_difference > minimum
+    normalized_difference = (difference - mean) / std
+    eva = 0
+    for i in range(60):
+        idx = i // 30
+        row = i % 30 // 3
+        column = i % 30 % 3
+        tmp = abs(normalized_difference[idx,row,column])
+        if tmp < std[idx,row,column]:
+            eva += math.exp(-2.3 * tmp/std[idx,row,column])
+        else:
+            return 0
 
-    return np.all(more) and np.all(less)
+    return eva / 60.

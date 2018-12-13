@@ -31,13 +31,18 @@ def string2nparray(strings):
     return np.array(strings)
 
 def select_policy(init, next_states, policy):
-    if policy == 'random':
-        choices = [i for i in range(len(next_states)) if next_states[i] == 1 and i != init]
-        choice = choices[np.random.randint(0, len(choices))]
-    else:
-        pass
+    if policy == 'no self':
+        possibilities = [next_states[i] for i in range(len(next_states)) if next_states[i] != 0 and i != init]
+        idxes = [i for i in range(len(next_states)) if next_states[i] != 0 and i != init]
+        s = sum(possibilities)
+        possibilities = [x/s for x in possibilities]
+    elif policy == 'random':
+        possibilities = [next_states[i] for i in range(len(next_states)) if next_states[i] != 0]
+        idxes = [i for i in range(len(next_states)) if next_states[i] != 0]
+        s = sum(possibilities)
+        possibilities = [x/s for x in possibilities]
 
-    return choice
+    return idxes[np.random.choice(np.arange(len(idxes)),p=possibilities)]
 
 def filter(data, fc=4):
     # fps = 30
