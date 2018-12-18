@@ -37,7 +37,7 @@ class Searchloops:
         self.twos = 0
         self.threes = 0
         self.links = 0
-    
+
     def search(self):
         for i in range(len(self.matrix.rows)):
             for j in self.matrix.rows[i]:
@@ -45,13 +45,13 @@ class Searchloops:
                 ''' avoid twice count and self connect'''
                 if j > i and self.matrix[j,i] != 0:
                     self.twos += 1
-                            
+
         for i in range(len(self.matrix.rows)):
             for j in self.matrix.rows[i]:
                 for k in self.matrix.rows[j]:
                     if self.matrix[k,i] != 0:
                         self.threes += 1
-                            
+
         self.threes /= 3
         print('number of links: {0}'.format(self.links))
         print('number of loops (length of two) : {0}'.format(self.twos))
@@ -65,7 +65,7 @@ class Searchloops:
 union find tree search
 """
 class Unionfind:
-    
+
     def __init__(self, groups):
         self.groups=groups
         self.items=[]
@@ -77,7 +77,7 @@ class Unionfind:
         for item in self.items:
             self.rootdict[item]=1
             self.parent[item]=item
- 
+
     def union(self, r1, r2):
         rr1=self.findroot(r1)
         rr2=self.findroot(r2)
@@ -91,13 +91,13 @@ class Unionfind:
             self.parent[rr1]=rr2
             self.rootdict.pop(rr1)
             self.rootdict[rr2]=cr1+cr2
- 
+
     def findroot(self, r):
         if r in self.rootdict.keys():
             return r
         else:
             return self.findroot(self.parent[r])
- 
+
     def createtree(self):
         for g in self.groups:
             if len(g)< 2:
@@ -106,7 +106,7 @@ class Unionfind:
                 for i in range(0, len(g)-1):
                     if self.findroot(g[i]) != self.findroot(g[i+1]):
                         self.union(g[i], g[i+1])
- 
+
     def tree(self, save=False):
         self.rs={}
         for item in self.items:
@@ -122,10 +122,10 @@ class Unionfind:
                     cnt += 1
                 print('number of union: {0}'.format(len(self.rs.keys())))
                 f.write('number of union: {0}'.format(len(self.rs.keys())))
-        
+
 
 class State(object):
-    
+
     """
     initiate state
     """
@@ -140,7 +140,7 @@ class State(object):
             print('the argument need to be a list(frame)')
             with open(LOG_PATH, 'a') as f:
                 f.write('the argument need to be a list(frame)\n')
-    
+
     """
     calculate velocity from rotations
     """
@@ -152,7 +152,7 @@ class State(object):
         else:
             self.velocity = (self.next - self.prev) / 2
         self.state = np.vstack((self.position[np.newaxis,:], self.velocity[np.newaxis,:]))
-    
+
     """
     calculate dp and dv
     """
@@ -161,7 +161,7 @@ class State(object):
         velocity_difference = velocity - self.state[1]
 
         return position_difference, velocity_difference
-    
+
     """
     calculate norm
     """
@@ -195,9 +195,9 @@ class State(object):
             state[i//30][i%30//column][i%30%column] = round(self.state.item(i), 1)
         return state
 
-    
+
 class Roadmap(object):
-    
+
     """
     initiate states
     """
@@ -279,7 +279,7 @@ class Roadmap(object):
     hierarchy clustering
     """
     def resampling(self, matrix, rdmplist, rtlist, rthreshold):
-        
+
         ''' locality sensitive hash'''
         def lsh(state):
             return np.sum(abs(state))
@@ -308,7 +308,7 @@ class Roadmap(object):
             else:
                 replaces = sorted(replaces, key=lambda x: x[-1])
             l += len(replaces)
-                
+
             ''' merge matrix  and roadmap list and route list'''
             if replaces:
                 u = Unionfind([x[0] for x in replaces])
@@ -325,7 +325,7 @@ class Roadmap(object):
                             matrix[idxes[0],:] += matrix[idxes[i],:]
                             matrix[:,idxes[0]] += matrix[:,idxes[i]]
                     s /= len(idxes)
-                    
+
                     rdmplist = [rdmplist[i] for i in range(len(rdmplist)) if i not in idxes[1:]]
                     rtlist = [rtlist[i] for i in range(len(rtlist)) if i not in idxes[1:]]
                     rdmplist[idxes[0]].state = s
@@ -334,16 +334,16 @@ class Roadmap(object):
                     matrix = matrix[:,row]
             else:
                 break
-                
+
         print('{0} states deleted during resampling'.format(l))
         with open(LOG_PATH, 'a') as f:
             f.write('{0} states deleted during resampling'.format(l))
-            
+
         return matrix, rdmplist, rtlist
-        
+
     """
     connect states between current state and next state
-    """    
+    """
     def connect_origin(self):
         cnt = 0
         print('creating roadmap')
@@ -360,12 +360,12 @@ class Roadmap(object):
                     else:
                         roadmap[cnt, cnt+1] = 1
                     cnt += 1
-                    
+
         return roadmap, roadmap_list, route_list
-    
+
     """
     connect states by dp and dv
-    """    
+    """
     def connect_probabilistic(self, matrix, rdmplist, cthreshold):
         successed = False
         cnums = []
@@ -379,7 +379,7 @@ class Roadmap(object):
             print('creating roadmap:%d/%d (approximate)'%(cnt, nums))
         timer = threading.Timer(10, printf)
         timer.start()
-        
+
         for i in range(len(rdmplist)):
             cnum = 0
             for j in range(len(rdmplist)):
@@ -393,16 +393,16 @@ class Roadmap(object):
             cnums.append(cnum)
             print('%d states connected'%cnum)
         successed = True
-        
+
         with open(CONNECT_PATH + 'connect.txt', 'w') as f:
             f.write(str(cnums))
-            
+
         connect_image = self.cplot(cnums, plt)
         plt.xlabel('Connection')
         plt.ylabel('Number')
         fig_name = CONNECT_PATH + 'connect.png'
         plt.savefig(fig_name)
-                        
+
         return matrix, rdmplist
 
     """
@@ -410,14 +410,14 @@ class Roadmap(object):
     """
     def cplot(self, c, _plt):
         _plt.hist(c, 5000)
-        
+
         return _plt
-    
+
     """
     use matrix connect roadmap and resampling
     """
     def create_roadmap_matrix_and_resampling(self, data, threshold, resampling):
-        
+
         self.create_states(data)
         roadmap, roadmap_list, route_list = self.connect_origin()
         roadmap, roadmap_list, route_list = self.resampling(roadmap, roadmap_list, route_list, resampling)
@@ -426,7 +426,7 @@ class Roadmap(object):
         '''make sure all states will not connect to itself'''
         for i in range(len(roadmap.rows)):
             roadmap[i,i] = 0
-        
+
         roadmap_list = [roadmap_list[i].state for i in range(len(roadmap_list))]
 
         return roadmap, roadmap_list, route_list
@@ -487,7 +487,7 @@ class Roadmap(object):
         io.savemat(path + "roadmap", {"roadmap":roadmap})
         s = Searchloops(roadmap)
         s.search()
-        
+
         sets = []
         for i in range(len(roadmap.rows)):
             for j in roadmap.rows[i]:
@@ -495,12 +495,12 @@ class Roadmap(object):
         u = Unionfind(sets)
         u.createtree()
         u.tree(True)
-        
+
         with open(path + 'states.txt', 'w') as f:
             f.write(str(np.array(roadmap_list).tolist()))
         with open(path + 'routes.txt', 'w') as f:
             f.write(str(route_list))
-            
+
         print('successed save')
         print('roadmap matrix @ size of: {0}x{0}'.format(len(roadmap.rows)))
         with open(LOG_PATH, 'a') as f:
@@ -508,7 +508,7 @@ class Roadmap(object):
             f.write('roadmap matrix @ size of: {0}x{0}'.format(len(roadmap.rows)))
 
 if __name__ == '__main__':
-    
+
     parser = argparse.ArgumentParser(description='create roadmap by matrix and dict')
     parser.add_argument('-t', '--threshold', dest='threshold', type=float,
                         default=0.5,help='threshold for connection, default is 0.5')
@@ -522,22 +522,24 @@ if __name__ == '__main__':
     resampling = args.resampling
 
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    PATH = '/home/fan/generate-motion-from-roadmap/rotation/'
-    LOG_PATH = '/home/fan/generate-motion-from-roadmap/logs/{0}/log'.format(timenow)
-    CONNECT_PATH = '/home/fan/generate-motion-from-roadmap/logs/{0}/'.format(timenow)
-    if not os.path.exists('/home/fan/generate-motion-from-roadmap/roadmap/threshold{0}'.format(threshold)):
-        os.mkdir('/home/fan/generate-motion-from-roadmap/roadmap/threshold{0}'.format(threshold))
-    if not os.path.exists('/home/fan/generate-motion-from-roadmap/logs/{0}'):
-        os.mkdir('/home/fan/generate-motion-from-roadmap/logs/{0}'.format(timenow))
-    dirs = os.listdir(PATH)
-    
+    PATH = os.getcwd()
+    ROTATION = '{0}/rotation/'.format(PATH)
+    LOG_PATH = '{0}/logs/{1}/log'.format(PATH, timenow)
+    CONNECT_PATH = '{0}/logs/{1}/'.format(PATH, timenow)
+
+    if not os.path.exists('{0}/roadmap/threshold{1}'.format(PATH, threshold)):
+        os.mkdir('{0}/roadmap/threshold{1}'.format(PATH, threshold))
+    if not os.path.exists('{0}/logs/{1}'.format(PATH, timenow)):
+        os.mkdir('{0}/logs/{1}'.format(PATH, timenow))
+    dirs = os.listdir(ROTATION)
+
     data = []
     length = []
 
     for files in dirs:
         with open(PATH + files, 'r') as f:
             fr = f.readlines()
-            
+
     if sampling:
         length.append(int(math.ceil(len(fr)/3.)))
         for i in range(0, len(fr), 3):
@@ -558,8 +560,8 @@ if __name__ == '__main__':
             for j in range(0, len(line), 3):
                 frame.append([float(line[j]), float(line[j+1]), float(line[j+2])])
             data.append(frame)
-                    
+
     data = np.array(data)
 
-    roadmap = Roadmap(length)        
-    roadmap.save_roadmap('/home/fan/generate-motion-from-roadmap/roadmap/threshold{0}/'.format(threshold), data, threshold, resampling)
+    roadmap = Roadmap(length)
+    roadmap.save_roadmap('{0}/roadmap/threshold{1}/'.format(PATH, threshold), data, threshold, resampling)

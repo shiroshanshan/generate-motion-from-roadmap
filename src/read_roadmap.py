@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from utils import *
 import threading
 import json
+import os
 
 # roadmap_array = {}
 
@@ -143,15 +144,17 @@ class Roadmap(object):
         timer = threading.Timer(600, save_every_ten_min)
         timer.start()
 
-roadmap = io.loadmat("/home/fan/generate-motion-from-roadmap/roadmap/roadmap")["roadmap"]
+PATH = os.getcwd()
 
-with open('/home/fan/generate-motion-from-roadmap/roadmap/states.txt', 'r') as f:
+roadmap = io.loadmat("{0}/roadmap/roadmap".format(PATH))["roadmap"]
+
+with open('{0}/roadmap/states.txt'.format(PATH), 'r') as f:
     states = f.read()
     states = eval(states)
-with open('/home/fan/generate-motion-from-roadmap/roadmap/routes.txt', 'r') as f:
+with open('{0}/roadmap/routes.txt'.format(PATH), 'r') as f:
     routes = f.read()
     routes = eval(routes)
-with open('/home/fan/generate-motion-from-roadmap/roadmap/saved/routes.json', 'r') as f:
+with open('{0}/roadmap/saved/routes.json'.format(PATH), 'r') as f:
     routes_dic = f.read()
     routes_dic = eval(routes_dic)
 

@@ -18,14 +18,12 @@ def read_files(PATH, files):
             for inline in re.split(",\s*", line):
                 if inline:
                     a = re.split(' ', inline)
-
                     q = QVector3D(float(a[1]), float(a[3]), float(a[2]))
                     inposition.append(q)
-
             positions.append(inposition)
     return positions
 
-def write_rotation_file(rotationfile,rotationlist):
+def write_rotation_file(rotationfile, rotationlist):
     for frame in rotationlist:
         for joint in frame:
             rotationfile.write(str(joint[0]) + " " + str(joint[1]) + " " + str(joint[2]))
@@ -160,3 +158,18 @@ def positions_to_rotation(pos, frame=0, xangle=0):
     frame_rotation.append(rotation_euler)
 
     return frame_rotation
+
+if __name__ == '__main__':
+    PATH = os.getcwd()
+    TARGET = PATH + '/rotation/'
+    POSE = PATH + '/3dpose/'
+
+    dirs = os.listdir(POSE)
+    for files in dirs:
+        position = read_files(POSE, files)
+        rotationlist = []
+        for frame, inposition in enumerate(position):
+            rotationlist.append(positions_to_rotation(inposition,frame,15))
+        target_dir = TARGET + files
+        with open(target_dir, 'w') as f:
+            write_rotation_file(f, rotationlist)

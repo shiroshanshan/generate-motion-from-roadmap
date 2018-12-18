@@ -1,10 +1,11 @@
 import sys
-sys.path.append('/home/fan/generate-motion-from-roadmap/src')
+import os
+PATH = os.getcwd()
+sys.path.append('{0}/src'.format(PATH))
 from read_roadmap import *
 from flask import Flask, render_template, g, request
 import pandas as pd
 import datetime
-import os
 import json
 from gaze_deter import gaze_determinator
 import logging
@@ -18,7 +19,7 @@ fv = 0
 fc = 0
 rdp.read_roadmap(roadmap, states, routes, routes_dic)
 rdp.save_every_ten()
-bone_csv_file = '/home/fan/generate-motion-from-roadmap/model.csv'
+bone_csv_file = '{0}/model.csv'.format(PATH)
 # app.register_blueprint(b)
 
 @app.route("/")
@@ -30,7 +31,7 @@ def initate():
     global last_state
     init_state = rdp.init_state()
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    vmd_file = '/home/fan/generate-motion-from-roadmap/server/static/vmd/{0}.vmd'.format(timenow)
+    vmd_file = '{0}/server/static/vmd/{1}.vmd'.format(PATH, timenow)
     last_state = rdp.motion_generation(init_state, vmd_file, bone_csv_file, False, False)
     return timenow
 
@@ -38,7 +39,7 @@ def initate():
 def gene_motion():
     global last_state
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    vmd_file = '/home/fan/generate-motion-from-roadmap/server/static/vmd/{0}.vmd'.format(timenow)
+    vmd_file = '{0}/server/static/vmd/{1}.vmd'.format(PATH, timenow)
     last_state = rdp.motion_generation(last_state, vmd_file, bone_csv_file, False, False)
     return timenow
 
@@ -49,12 +50,12 @@ def openface():
     Imgfile = request.files['data']
 
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    Imgfile.save('/home/fan/generate-motion-from-roadmap/server/static/input/{0}.jpeg'.format(timenow))
+    Imgfile.save('static/input/{0}.jpeg'.format(timenow))
 
-    os.popen('~/OpenFace/build/bin/FaceLandmarkImg -f /home/fan/generate-motion-from-roadmap/server/static/input/{0}.jpeg\
-              -out_dir /home/fan/generate-motion-from-roadmap/server/static/output/{1}'.format(timenow, timenow)).readlines()
+    os.popen('~/OpenFace/build/bin/FaceLandmarkImg -f {0}/server/static/input/{1}.jpeg\
+              -out_dir {0}/server/static/output/{1}'.format(PATH, timenow)).readlines()
     try:
-        df = pd.read_csv('/home/fan/generate-motion-from-roadmap/server/static/output/{0}/{1}.csv'.format(timenow, timenow), sep=',')
+        df = pd.read_csv('{0}/server/static/output/{1}/{1}.csv'.format(PATH, timenow), sep=',')
     except:
         return 'no gaze detected'
 

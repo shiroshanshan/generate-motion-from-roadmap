@@ -1,9 +1,10 @@
 import os
 
-os.popen('rm -rf /home/fan/generate-motion-from-roadmap/server/static/vmd/*').readlines()
-os.popen('rm -rf /home/fan/generate-motion-from-roadmap/server/static/input/*').readlines()
-os.popen('rm -rf /home/fan/generate-motion-from-roadmap/server/static/output/*').readlines()
-os.popen('rm -rf /home/fan/generate-motion-from-roadmap/logs/*').readlines()
+PATH = os.getcwd()
+os.popen('rm -rf {0}/server/static/vmd/*'.format(PATH)).readlines()
+os.popen('rm -rf {0}/server/static/input/*'.format(PATH)).readlines()
+os.popen('rm -rf {0}/server/static/output/*'.format(PATH)).readlines()
+os.popen('rm -rf {0}/logs/*'.format(PATH)).readlines()
 print('/server/vmd cleared!')
 print('/server/static/input/* cleared!')
 print('/server/static/output/* cleared!')
