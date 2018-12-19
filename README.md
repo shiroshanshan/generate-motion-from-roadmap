@@ -15,7 +15,7 @@ We need to cut video into segment before create roadmap the simplest way is to r
 ```
 
 ## Data process
-<div align='center'>![](/plot/intro/preprocess.jpg)
+<img src="./plot/intro/preprocess.jpg" width = "100" height = "100" div align=right />
 First run ```python src/PosGener.py -i {$VIDEO_PATH} -o {$PATH_TO_OPENPOSE} -p{PATH_TO_3d_POSE_BASELINE} ```to extract joint position from videos, this process will take some times and the output of openpose will be located in ```./openpsoe``` and the output of 3d pose estimation will be located in ```./3dpose```.
 
 Then run ```python src/AngleCalculor.py``` (default x-correction is 15, you can change it by your self) to calculate joint angle from joint position.
