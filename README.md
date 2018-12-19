@@ -40,3 +40,6 @@ Here's some introduction about scripts and plots.
 * ```/scripts/txt2csv.py``` is used to save joint angle as csv file.
 *  ```/plot/plot_graphs.py``` is used to plot the relationship between dp and dv. 
 *  ```/plot/animation.py``` is used to plot animation of readed data (decrease the dimension to 2).
+
+## Document
+click <a href='/plot/intro/roadmap_summary.pdf' target='_blank'>this</a> to open
