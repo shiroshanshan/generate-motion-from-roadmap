@@ -1,6 +1,0 @@
-Input:/home/fan/generate-motion-from-roadmap/server/static/input/20181207142907.jpeg
-Input full path:/home/fan/generate-motion-from-roadmap/server/static/input/20181207142907.jpeg
-Camera parameters:250,250,160,120
-Output HOG:20181207142907.hog
-Output image:20181207142907.jpg
-Output aligned directory:20181207142907_aligned

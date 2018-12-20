@@ -39,7 +39,7 @@ class Roadmap(object):
         ################## test ########################
         for i in range(self.length):
             next = np.array(self.matrix[i, :].todense()).flatten()
-            if not 1 in next:
+            if not np.any(next):
                 print('nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn')
                 print(i,"th state don't have any connected state!")
         ################## test ########################
@@ -88,7 +88,7 @@ class Roadmap(object):
         with open('readed/{0}/raw_data.txt'.format(timenow),'w') as f:
             write_rotation_file(f, rotations)
 
-        os.mkdir('/home/fan/generate-motion-from-roadmap/images/{0}'.format(timenow))
+        # os.mkdir('readed/{0}'.format(timenow))
         plt.figure(1)
         raw_data_image = showAnimCurves(rotations, plt)
         plt.xlabel('Time(Second)')

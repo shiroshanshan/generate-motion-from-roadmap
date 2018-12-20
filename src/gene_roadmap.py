@@ -537,7 +537,7 @@ if __name__ == '__main__':
     length = []
 
     for files in dirs:
-        with open(PATH + files, 'r') as f:
+        with open(ROTATION + files, 'r') as f:
             fr = f.readlines()
 
     if sampling:

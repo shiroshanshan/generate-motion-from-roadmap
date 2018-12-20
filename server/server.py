@@ -50,7 +50,7 @@ def openface():
     Imgfile = request.files['data']
 
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    Imgfile.save('static/input/{0}.jpeg'.format(timenow))
+    Imgfile.save('{0}/server/static/input/{1}.jpeg'.format(PATH, timenow))
 
     os.popen('~/OpenFace/build/bin/FaceLandmarkImg -f {0}/server/static/input/{1}.jpeg\
               -out_dir {0}/server/static/output/{1}'.format(PATH, timenow)).readlines()
