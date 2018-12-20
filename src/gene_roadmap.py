@@ -564,4 +564,4 @@ if __name__ == '__main__':
     data = np.array(data)
 
     roadmap = Roadmap(length)
-    roadmap.save_roadmap('{0}/roadmap/threshold{1}/'.format(PATH, threshold), data, threshold, resampling)
+    roadmap.save_roadmap('{0}/roadmap/threshold{1}_{2}/'.format(PATH, threshold, resampling), data, threshold, resampling)
