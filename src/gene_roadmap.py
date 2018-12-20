@@ -303,8 +303,8 @@ class Roadmap(object):
                         dis = rdmplist[i].calculate_distance(rdmplist[item])
                         if dis < rthreshold:
                             replaces.append(((i, item) ,dis))
-            if len(replaces) >= 16:
-                replaces = sorted(replaces, key=lambda x: x[-1])[:16]
+            if len(replaces) >= 256:
+                replaces = sorted(replaces, key=lambda x: x[-1])[:256]
             else:
                 replaces = sorted(replaces, key=lambda x: x[-1])
             l += len(replaces)
@@ -314,8 +314,10 @@ class Roadmap(object):
                 u = Unionfind([x[0] for x in replaces])
                 u.createtree()
                 u.tree()
+                delete = []
                 for key in u.rs.keys():
                     idxes = sorted(u.rs[key])
+                    delete += idxes[1:]
                     s = np.zeros(self.states[0][0].state.shape)
                     for i in range(len(idxes)):
                         s += rdmplist[idxes[i]].state
@@ -325,13 +327,13 @@ class Roadmap(object):
                             matrix[idxes[0],:] += matrix[idxes[i],:]
                             matrix[:,idxes[0]] += matrix[:,idxes[i]]
                     s /= len(idxes)
-
-                    rdmplist = [rdmplist[i] for i in range(len(rdmplist)) if i not in idxes[1:]]
                     rtlist = [rtlist[i] for i in range(len(rtlist)) if i not in idxes[1:]]
                     rdmplist[idxes[0]].state = s
-                    row = [i for i in range(len(matrix.rows)) if i not in idxes[1:]]
-                    matrix = matrix[row,:]
-                    matrix = matrix[:,row]
+                    
+                row = [i for i in range(len(matrix.rows)) if i not in delete]
+                matrix = matrix[row,:]
+                matrix = matrix[:,row]
+                rdmplist = [rdmplist[i] for i in range(len(rdmplist)) if i not in delete]
             else:
                 break
 
@@ -417,6 +419,8 @@ class Roadmap(object):
     use matrix connect roadmap and resampling
     """
     def create_roadmap_matrix_and_resampling(self, data, threshold, resampling):
+        with open(LOG_PATH, 'a') as f:
+            f.write('start create states @ threshold:{0} and resampling:{1}'.format(threshold, resampling))
 
         self.create_states(data)
         roadmap, roadmap_list, route_list = self.connect_origin()
@@ -527,8 +531,8 @@ if __name__ == '__main__':
     LOG_PATH = '{0}/logs/{1}/log'.format(PATH, timenow)
     CONNECT_PATH = '{0}/logs/{1}/'.format(PATH, timenow)
 
-    if not os.path.exists('{0}/roadmap/threshold{1}'.format(PATH, threshold)):
-        os.mkdir('{0}/roadmap/threshold{1}'.format(PATH, threshold))
+    if not os.path.exists('{0}/roadmap/threshold{1}_re{2}'.format(PATH, threshold, resampling)):
+        os.mkdir('{0}/roadmap/threshold{1}_re{2}'.format(PATH, threshold, resampling))
     if not os.path.exists('{0}/logs/{1}'.format(PATH, timenow)):
         os.mkdir('{0}/logs/{1}'.format(PATH, timenow))
     dirs = os.listdir(ROTATION)
@@ -564,4 +568,4 @@ if __name__ == '__main__':
     data = np.array(data)
 
     roadmap = Roadmap(length)
-    roadmap.save_roadmap('{0}/roadmap/threshold{1}_{2}/'.format(PATH, threshold, resampling), data, threshold, resampling)
+    roadmap.save_roadmap('{0}/roadmap/threshold{1}_re{2}/'.format(PATH, threshold, resampling), data, threshold, resampling)
