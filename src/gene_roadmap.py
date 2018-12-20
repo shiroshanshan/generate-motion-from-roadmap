@@ -318,6 +318,7 @@ class Roadmap(object):
                 for key in u.rs.keys():
                     idxes = sorted(u.rs[key])
                     delete += idxes[1:]
+                    print(idxes)
                     s = np.zeros(self.states[0][0].state.shape)
                     for i in range(len(idxes)):
                         s += rdmplist[idxes[i]].state
@@ -329,7 +330,7 @@ class Roadmap(object):
                     s /= len(idxes)
                     rtlist = [rtlist[i] for i in range(len(rtlist)) if i not in idxes[1:]]
                     rdmplist[idxes[0]].state = s
-                    
+
                 row = [i for i in range(len(matrix.rows)) if i not in delete]
                 matrix = matrix[row,:]
                 matrix = matrix[:,row]
@@ -544,26 +545,26 @@ if __name__ == '__main__':
         with open(ROTATION + files, 'r') as f:
             fr = f.readlines()
 
-    if sampling:
-        length.append(int(math.ceil(len(fr)/3.)))
-        for i in range(0, len(fr), 3):
-            frame = []
-            line = re.split('[,\s]+',fr[i])
-            if '' in line:
-                line.remove('')
-            for j in range(0, len(line), 3):
-                frame.append([float(line[j]), float(line[j+1]), float(line[j+2])])
-            data.append(frame)
-    else:
-        length.append(len(fr))
-        for line in fr:
-            frame = []
-            line = re.split('[,\s]+',line)
-            if '' in line:
-                line.remove('')
-            for j in range(0, len(line), 3):
-                frame.append([float(line[j]), float(line[j+1]), float(line[j+2])])
-            data.append(frame)
+        if sampling:
+            length.append(int(math.ceil(len(fr)/3.)))
+            for i in range(0, len(fr), 3):
+                frame = []
+                line = re.split('[,\s]+',fr[i])
+                if '' in line:
+                    line.remove('')
+                for j in range(0, len(line), 3):
+                    frame.append([float(line[j]), float(line[j+1]), float(line[j+2])])
+                data.append(frame)
+        else:
+            length.append(len(fr))
+            for line in fr:
+                frame = []
+                line = re.split('[,\s]+',line)
+                if '' in line:
+                    line.remove('')
+                for j in range(0, len(line), 3):
+                    frame.append([float(line[j]), float(line[j+1]), float(line[j+2])])
+                data.append(frame)
 
     data = np.array(data)
 
