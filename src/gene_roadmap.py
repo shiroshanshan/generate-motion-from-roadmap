@@ -318,7 +318,6 @@ class Roadmap(object):
                 for key in u.rs.keys():
                     idxes = sorted(u.rs[key])
                     delete += idxes[1:]
-                    print(idxes)
                     s = np.zeros(self.states[0][0].state.shape)
                     for i in range(len(idxes)):
                         s += rdmplist[idxes[i]].state
@@ -516,11 +515,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='create roadmap by matrix and dict')
     parser.add_argument('-t', '--threshold', dest='threshold', type=float,
-                        default=0.5,help='threshold for connection, default is 0.5')
+                        default=0.7,help='threshold for connection, default is 0.7')
     parser.add_argument('-s', '--sampling', dest='sampling', type=bool,
                         default=False, help='whether sample @30 fps, default is 10 fps')
     parser.add_argument('-r', '--resampling', dest='resampling', type=int,
-                        default=5, help='threshold for resampling, default is 5')
+                        default=20, help='threshold for resampling, default is 20')
     args = parser.parse_args()
     threshold = args.threshold
     sampling = args.sampling
