@@ -283,9 +283,9 @@ class Roadmap(object):
         ''' locality sensitive hash'''
         def lsh(state):
             return np.sum(abs(state))
-        buckets = [[] for i in range(500)]
+        buckets = [[] for i in range(1000)]
         for i in range(len(rdmplist)):
-            idx = int(lsh(rdmplist[i].state) // 20 + 1)
+            idx = int(lsh(rdmplist[i].state) // rthreshold + 1)
             buckets[idx].append(i)
 
         l = 0
@@ -296,7 +296,7 @@ class Roadmap(object):
             cnt += 1
             replaces = []
             for i in range(len(rdmplist)):
-                idx = int(lsh(rdmplist[i].state) // 20 + 1)
+                idx = int(lsh(rdmplist[i].state) // rthreshold + 1)
                 bucket = buckets[idx-1] + buckets[idx] + buckets[idx+1]
                 for item in bucket:
                     if i > item:

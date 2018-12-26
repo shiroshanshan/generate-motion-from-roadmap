@@ -1,2 +1,0 @@
-start create states @ threshold:0.5 and resampling:20880 states deleted during resamplingafter 25 loops, 24 dots removed because of isolating dot
-number of links: 3324number of loops (length of two) : 450number of loops (length of three) : 810number of states in union 0: 1188number of union: 1successed saveroadmap matrix @ size of: 1188x1188

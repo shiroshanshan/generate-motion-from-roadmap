@@ -62,12 +62,12 @@
 					contentType: false,
 					success: function(res){
 						console.log(res);
-						shot();
+						startshot();
 					},
 				});
 			}
 
-			function shot(){
+			function startshot(){
 				var context = snapshot.getContext('2d');
 				context.drawImage(player, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
 				snapshotCanvas.toBlob(postImg, 'image/jpeg');
@@ -99,7 +99,7 @@
 						};
 						motionParams.push(tmp);
 						setTimeout(function(){
-							shot();
+							startshot();
 							mmdloop();
 						},3000)
 						updateMotion();
@@ -118,13 +118,14 @@
 							isMoving: true,
 							files: [ 'static/vmd/'+ res +'.vmd' ]
 						};
+						console.log(motionParams);
 						motionParams.push(tmp);
 						if(endloop){
 							return;
 						}else{
 							setTimeout(function(){
 								mmdloop();
-							},4000)
+							},3500)
 						// updateMotion();
 						}
 					}
@@ -347,7 +348,7 @@
 					updateMotion();
 					// helper.setAnimation( mesh );
 					// mesh.mixer.stopAllAction();
-
+					console.log(motionParams);
 					loadoneVmd(mesh, cnt, function(){
 						console.log('out of index');
 					});
