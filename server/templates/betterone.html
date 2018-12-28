@@ -15,7 +15,7 @@
 		</dic>
 		<div id="btn" style="position:absolute;left:90%;top:30px;">
 			<button type="button" id="start" style="border-radius:8px;width:100px;height:25px;z-index:999;">START</button>
-			<button type="button" id="stop" style="border-radius:8px;width:100px;height:25px;display:none;z-index:999;">STOP</button>
+			<button type="button" id="stop" style="border-radius:8px;width:100px;height:25px;display:none;z-index:999;">RELOAD</button>
 			<!-- <button type="button" id="capture" style="border-radius:8px;width:100px;height:25px;z-index:999;">CAPTURE</button> -->
 			<canvas id='snapshot' width=320 height=240 style="display:none;"></canvas>
 		</div>
@@ -36,127 +36,51 @@
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/libs/dat.gui.min.js"></script>
 		<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
 		<script id="updateMotion">
-			var current_motion_name;
-			//Video record and upload
-		  var player = document.getElementById('player');
-		  // var captureButton = document.getElementById('capture');
-		  var videoTracks;
-			var snapshotCanvas = document.getElementById('snapshot');
+			// var current_motion_name;
+			// //Video record and upload
+		  // var player = document.getElementById('player');
+			// var snapshotCanvas = document.getElementById('snapshot');
+			//
+		  // var handleSuccess = function(stream) {
+		  //   player.srcObject = stream;
+		  // };
+			//
+			// function postImg(Img){
+			// 	var formData = new FormData();
+			// 	formData.append("fname",current_motion_name);
+			// 	formData.append("data",Img);
+			// 	$.ajax({
+			// 		type: 'POST',
+			// 		url: '/openface',
+			// 		cache: false,
+			// 		data: formData,
+			// 		processData: false,
+			// 		contentType: false,
+			// 		success: function(res){
+			// 			shot();
+			// 		},
+			// 	});
+			// }
+			//
+			// function shot(){
+			// 	var context = snapshot.getContext('2d');
+			// 	context.drawImage(player, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+			// 	snapshotCanvas.toBlob(postImg, 'image/jpeg');
+			// };
+			//
+		  // navigator.mediaDevices.getUserMedia({video: true})
+		  //     .then(handleSuccess);
 
-		  var handleSuccess = function(stream) {
-		    // Attach the video stream to the video element and autoplay.
-		    player.srcObject = stream;
-		    // videoTracks = stream.getVideoTracks();
-		  };
-
-			function postImg(Img){
-				var formData = new FormData();
-				formData.append("fname",current_motion_name);
-				formData.append("data",Img);
-				$.ajax({
-					type: 'POST',
-					url: '/openface',
-					cache: false,
-					data: formData,
-					processData: false,
-					contentType: false,
-					success: function(res){
-						console.log(res);
-						startshot();
-					},
-				});
-			}
-
-			function startshot(){
-				var context = snapshot.getContext('2d');
-				context.drawImage(player, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
-				snapshotCanvas.toBlob(postImg, 'image/jpeg');
-			};
-
-		    // Stop all video streams.
-		    // videoTracks.forEach(function(track) {track.stop()});
-
-		  navigator.mediaDevices.getUserMedia({video: true})
-		      .then(handleSuccess);
-
-
-			// send a request and start sampling from roadmap
-			var endloop = false;
-			function initiate() {
-				currentBtnR = document.getElementById("start");
-				currentBtnS = document.getElementById("stop");
-				currentBtnR.style.display = "none";
-				currentBtnS.style.display = "inline";
-				$.ajax({
-					url: '/initate',
-					success: function(res){
-						console.log(res);
-						download(res);
-						var tmp = {
-							name: res,
-							isMoving: true,
-							files: [ 'static/vmd/'+ res +'.vmd' ]
-						};
-						motionParams.push(tmp);
-						setTimeout(function(){
-							startshot();
-							mmdloop();
-						},3000)
-						updateMotion();
-					}
-				})
-			}
-			// keep download motion files
-			function mmdloop(){
-				$.ajax({
-					url: '/gene_motion',
-					success: function(res){
-						console.log(res);
-						download(res);
-						var tmp = {
-							name: res,
-							isMoving: true,
-							files: [ 'static/vmd/'+ res +'.vmd' ]
-						};
-						console.log(motionParams);
-						motionParams.push(tmp);
-						if(endloop){
-							return;
-						}else{
-							setTimeout(function(){
-								mmdloop();
-							},3500)
-						// updateMotion();
-						}
-					}
-				})
-			}
-			// stop download motion file and update motion
-			function stop(){
-				currentBtnR = document.getElementById("start");
-				currentBtnS = document.getElementById("stop");
-				currentBtnR.style.display = "inline";
-				currentBtnS.style.display = "none";
-				endloop = true;
-				setTimeout(function(){
-					motionParams = [];
-					helper.setAnimations(mesh);
-					mesh.mixer.stopAllAction();
-				},4000)
-			}
 			document.getElementById("start").addEventListener('click', function(){initiate();});
 			document.getElementById("stop").addEventListener('click', function(){stop();});
 
 			var container;
 
-			var scene;
-			var camera;
+			var scene, camera;
 
-			var renderer;
-			var effect;
+			var renderer, effect;
 
-			var mesh;
-			var renderTarget;
+			var mesh, renderTarget;
 
 			var blinkMorphName = 'まばたき';
 			var blinkVmd = {
@@ -201,8 +125,6 @@
 
 			var motionParams = [];
 
-			var cnt = 0;
-
 			var poses = {};
 
 			var ready = false;
@@ -222,7 +144,7 @@
 			};
 
 			helper = new THREE.MMDHelper();
-			var mesh = helper.meshes[ 0 ];
+			mesh = helper.meshes[ 0 ];
 
 			init();
 			animate();
@@ -243,8 +165,8 @@
 				controls.minPolarAngle = 1; // radians
 				controls.maxPolarAngle = 2; // radians
 
-				controls.minAzimuthAngle = - Infinity; // radians
-				controls.maxAzimuthAngle = Infinity; // radians
+				controls.minAzimuthAngle = - 1; // radians
+				controls.maxAzimuthAngle = 1; // radians
 
 				// scene
 
@@ -277,7 +199,7 @@
 
 				loadModels( function () {
 
-					miku = mesh;
+					// miku = mesh;
 
 					loadVpds( mesh, function () {
 
@@ -291,24 +213,6 @@
 
 							helper.setAnimation( mesh );
 
-							for ( var i = 0; i < motionParams.length; i++ ) {
-
-								var param = motionParams[ i ];
-
-								var name = param.name;
-								mesh.mixer.clipAction( name ).stop();
-								// mesh.mixer.clipAction( name ).loop = THREE.LoopOnce;
-								// mesh.mixer.clipAction( name + 'Morph' ).weight = 0.0;
-								// startMotion( mesh, name );
-
-
-							}
-
-							// mesh.mixer.clipAction( motionParams[motionParams.length-1].name ).play();
-							// mesh.mixer.clipAction( name ).loop = THREE.LoopOnce;
-							// mesh.mixer.clipAction( name ).clampWhenFinished = true;
-
-							// createDictionary( mesh );
 							startBlink( mesh );
 
 							ready = true;
@@ -318,62 +222,100 @@
 					} );
 
 				} );
-				// startBlink(mesh);
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
 			}
 
-			function download(res){
+			// send a request and start sampling from roadmap
+			function initiate() {
+				currentBtnR = document.getElementById("start");
+				currentBtnS = document.getElementById("stop");
+				currentBtnR.style.display = "none";
+				currentBtnS.style.display = "inline";
+				$.ajax({
+					async: true,
+					url: '/initate',
+					success: function(res){
 
+						loadMotion(res).then(function(value){
+							console.log(value);
+							updateMotion().then(function(value){
+								mmdLoop();
+								console.log(value);
+							});
+						});
+					}
+				})
+			}
+
+			// keep download motion files
+			function mmdLoop(){
+				$.ajax({
+					async: true,
+					url: '/gene_motion',
+					success: function(res){
+
+						loadMotion(res).then(function(value){
+							console.log(value);
+							var time = mesh.geometry.animations[1].duration - mesh.mixer.clipAction( motionParams[0].name ).time - clock.getDelta()
+							console.log(time);
+							motionParams.splice(0,1);
+							mesh.geometry.animations.splice(1,1);
+							setTimeout(function(){
+								// motionParams.splice(0,1);
+								// mesh.geometry.animations.splice(1,1);
+								updateMotion().then(function(value){
+									mmdLoop();
+									console.log(value);
+								});
+							}, time*900)
+						});
+
+						}
+					}
+				)
+			}
+
+			// stop download motion file and update motion
+			function stop(){
+				currentBtnR = document.getElementById("start");
+				currentBtnS = document.getElementById("stop");
+				currentBtnR.style.display = "inline";
+				currentBtnS.style.display = "none";
+				location.reload();
+			}
+
+			function loadMotion(res){
 				var tmp = {
 					name: res,
-					isMoving: true,
 					files: [ 'static/vmd/'+ res +'.vmd' ]
 				};
+				motionParams.push(tmp);
+				loadOneVmd( mesh );
 
-				loader.loadVmds( tmp.files, function ( vmd ) {
-
-					loader.pourVmdIntoModel( mesh, vmd, res );
-
-				}, onProgress, onError );
-
-				// mesh.mixer.clipAction( res ).stop();
+				return new Promise(function (resolve, reject){
+					setTimeout(function(){
+					resolve('loading');
+				}, 50)
+				})
 
 			}
 
 			function	updateMotion(){
+				mesh.mixer.clipAction( motionParams[0].name ).play();
+				mesh.mixer.clipAction( motionParams[0].name ).loop = THREE.LoopOnce;
+				mesh.mixer.clipAction( motionParams[0].name ).clampWhenFinished = true;
 
-				setTimeout(function(){
-					updateMotion();
-					// helper.setAnimation( mesh );
-					// mesh.mixer.stopAllAction();
-					console.log(motionParams);
-					loadoneVmd(mesh, cnt, function(){
-						console.log('out of index');
-					});
-					mesh.mixer.clipAction( motionParams[cnt].name ).play();
-					mesh.mixer.clipAction( motionParams[cnt].name ).loop = THREE.LoopOnce;
-					mesh.mixer.clipAction( motionParams[cnt].name ).clampWhenFinished = true;
-
-					startBlink( mesh );
-					// cnt ++;
-
-					// mesh.mixer.stopAllAction();
-					// for ( var i = 0; i < motionParams.length; i++ ) {
-					//
-					// 	var param = motionParams[ i ];
-					//
-					// 	var name = param.name;
-					// 	mesh.mixer.clipAction( name ).stop();
-					//
-					// }
-					delete mesh.geometry.animations[1];
-					mesh.geometry.animations.splice(1,1)
-					motionParams.shift();
-				},4000)
+				startBlink( mesh );
 
 				animate();
+
+				return new Promise(function (resolve, reject){
+					setTimeout(function(){
+					resolve('updating');
+				}, 50)
+				})
 
 			}
 
@@ -428,7 +370,7 @@
 
 					loader.loadVmds( param.files, function ( vmd ) {
 
-						loader.pourVmdIntoModel( mesh, vmd, param.name );
+						loader.createAnimation( mesh, vmd, param.name );
 
 						load( index + 1 );
 
@@ -440,28 +382,15 @@
 
 			}
 
-			function loadoneVmd ( mesh, index, callback ) {
+			function loadOneVmd ( mesh, callback ) {
 
-				function load ( index ) {
+				var param = motionParams[ motionParams.length - 1 ];
 
-					if ( index >= motionParams.length ) {
+				loader.loadVmds( param.files, function ( vmd ) {
 
-						callback();
-						return;
+					loader.pourVmdIntoModel( mesh, vmd, param.name );
 
-					}
-
-					var param = motionParams[ index ];
-
-					loader.loadVmds( param.files, function ( vmd ) {
-
-						loader.pourVmdIntoModel( mesh, vmd, param.name );
-
-					}, onProgress, onError );
-
-				}
-
-				load(index);
+				}, onProgress, onError );
 
 			}
 
@@ -604,7 +533,6 @@
 				}
 			}
 
-		</script>
-
+			</script>
 	</body>
 </html>

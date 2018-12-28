@@ -3,7 +3,7 @@ import os
 PATH = os.getcwd()
 sys.path.append('{0}/src'.format(PATH))
 from read_roadmap import *
-from flask import Flask, render_template, g, request
+from flask import Flask, render_template, g, request, send_file
 import pandas as pd
 import datetime
 import json
@@ -42,6 +42,14 @@ def gene_motion():
     vmd_file = '{0}/server/static/vmd/{1}.vmd'.format(PATH, timenow)
     last_state = rdp.motion_generation(last_state, vmd_file, bone_csv_file, False, False)
     return timenow
+
+@app.route("/download", methods=['POST'])
+def download():
+    print(request.json)
+    res = request.json['time']
+    download_file_name = res +'.vmd'
+    download_file = '{0}/server/static/vmd/{1}.vmd'.format(PATH, res)
+    return send_file(download_file, as_attachment = True, attachment_filename = download_file_name, mimetype = 'application/vocaltec-media-desc')
 
 @app.route('/openface', methods=['POST'])
 def openface():
@@ -90,7 +98,7 @@ def openface():
 
 if __name__ == "__main__":
     log = logging.getLogger('werkzeug')
-    log.setLevel(logging.ERROR)
+    # log.setLevel(logging.ERROR)
     app.jinja_env.auto_reload = True
-    app.run(host='0.0.0.0', debug=True, port=5000, ssl_context='adhoc')
+    app.run(host='0.0.0.0', debug=True, port=5001, ssl_context='adhoc')
     # app.run(port=8008, debug=True)
