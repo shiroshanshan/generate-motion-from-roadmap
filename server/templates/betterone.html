@@ -36,40 +36,40 @@
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/libs/dat.gui.min.js"></script>
 		<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
 		<script id="updateMotion">
-			// var current_motion_name;
-			// //Video record and upload
-		  // var player = document.getElementById('player');
-			// var snapshotCanvas = document.getElementById('snapshot');
-			//
-		  // var handleSuccess = function(stream) {
-		  //   player.srcObject = stream;
-		  // };
-			//
-			// function postImg(Img){
-			// 	var formData = new FormData();
-			// 	formData.append("fname",current_motion_name);
-			// 	formData.append("data",Img);
-			// 	$.ajax({
-			// 		type: 'POST',
-			// 		url: '/openface',
-			// 		cache: false,
-			// 		data: formData,
-			// 		processData: false,
-			// 		contentType: false,
-			// 		success: function(res){
-			// 			shot();
-			// 		},
-			// 	});
-			// }
-			//
-			// function shot(){
-			// 	var context = snapshot.getContext('2d');
-			// 	context.drawImage(player, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
-			// 	snapshotCanvas.toBlob(postImg, 'image/jpeg');
-			// };
-			//
-		  // navigator.mediaDevices.getUserMedia({video: true})
-		  //     .then(handleSuccess);
+			var currentMotion;
+			//Video record and upload
+		  var player = document.getElementById('player');
+			var snapshotCanvas = document.getElementById('snapshot');
+
+		  var handleSuccess = function(stream) {
+		    player.srcObject = stream;
+		  };
+
+			function postImg(Img){
+				var formData = new FormData();
+				formData.append("fname",currentMotion);
+				formData.append("data",Img);
+				$.ajax({
+					type: 'POST',
+					url: '/openface',
+					cache: false,
+					data: formData,
+					processData: false,
+					contentType: false,
+					success: function(res){
+						shot();
+					},
+				});
+			}
+
+			function shot(){
+				var context = snapshot.getContext('2d');
+				context.drawImage(player, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+				snapshotCanvas.toBlob(postImg, 'image/jpeg');
+			};
+
+		  navigator.mediaDevices.getUserMedia({video: true})
+		      .then(handleSuccess);
 
 			document.getElementById("start").addEventListener('click', function(){initiate();});
 			document.getElementById("stop").addEventListener('click', function(){stop();});
@@ -236,11 +236,12 @@
 				$.ajax({
 					async: true,
 					url: '/initate',
+					cache: false,
 					success: function(res){
-
 						loadMotion(res).then(function(value){
 							console.log(value);
 							updateMotion().then(function(value){
+								shot();
 								mmdLoop();
 								console.log(value);
 							});
@@ -254,6 +255,7 @@
 				$.ajax({
 					async: true,
 					url: '/gene_motion',
+					cache: false,
 					success: function(res){
 
 						loadMotion(res).then(function(value){
@@ -303,6 +305,7 @@
 			}
 
 			function	updateMotion(){
+				currentMotion = motionParams[0].name;
 				mesh.mixer.clipAction( motionParams[0].name ).play();
 				mesh.mixer.clipAction( motionParams[0].name ).loop = THREE.LoopOnce;
 				mesh.mixer.clipAction( motionParams[0].name ).clampWhenFinished = true;

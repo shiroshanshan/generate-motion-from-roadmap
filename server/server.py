@@ -18,7 +18,6 @@ fname = None
 fv = 0
 fc = 0
 rdp.read_roadmap(roadmap, states, routes, routes_dic)
-rdp.save_every_ten()
 bone_csv_file = '{0}/model.csv'.format(PATH)
 # app.register_blueprint(b)
 
@@ -28,6 +27,7 @@ def index():
 
 @app.route("/initate", methods=['GET'])
 def initate():
+    rdp.save_every_ten()
     global last_state
     init_state = rdp.init_state()
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -54,9 +54,11 @@ def download():
 @app.route('/openface', methods=['POST'])
 def openface():
     global fname, fv, fc
-    result = {}
-    Imgfile = request.files['data']
+    gaze = {}
+    au = {}
+    happiness, sadness, surprise, fear, anger, disgust, contempt = 0, 0, 0, 0, 0, 0, 0
 
+    Imgfile = request.files['data']
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     Imgfile.save('{0}/server/static/input/{1}.jpeg'.format(PATH, timenow))
 
@@ -65,12 +67,20 @@ def openface():
     try:
         df = pd.read_csv('{0}/server/static/output/{1}/{1}.csv'.format(PATH, timenow), sep=',')
     except:
+        print('gaze detection: no human face detected')
         return 'no gaze detected'
 
+    #emotion recognition from action units
+    au_r = df[[' AU01_r', ' AU02_r', ' AU04_r', ' AU05_r', ' AU06_r', ' AU07_r',\
+     ' AU12_r', ' AU15_r', ' AU20_r', ' AU23_r', ' AU26_r']]
+    au_c = df[[' AU01_c', ' AU02_c', ' AU04_c', ' AU05_c', ' AU06_c', ' AU07_c',\
+     ' AU12_c', ' AU15_c', ' AU20_c', ' AU23_c', ' AU26_c']]
+    # au['AU01_r'] = value
+
     value = df[[' gaze_0_x', ' gaze_0_y', ' gaze_0_z', ' gaze_1_x', ' gaze_1_y', ' gaze_1_z']].values
-    result['left_eye'] = value[0][:3]
-    result['right_eye'] = value[0][3:]
-    looking = gaze_determinator(result)
+    gaze['left_eye'] = value[0][:3]
+    gaze['right_eye'] = value[0][3:]
+    looking = gaze_determinator(gaze)
     if looking:
         print('gaze detection: gaze detected')
     else:
@@ -84,9 +94,9 @@ def openface():
             if tmp_key in tmp_connects:
                 k = tmp_connects.index(tmp_key)
                 rdp.routes_dic[tmp_key][k][40] += fv
-                rdp.routes_dic[tmp_key][k][41] += fn
+                rdp.routes_dic[tmp_key][k][41] += fc
             else:
-                rdp.routes_dic[tmp_key].append(tmp_value + [fv, fn])
+                rdp.routes_dic[tmp_key].append(tmp_value + [fv, fc])
         fname = request.form['fname']
         fc = 1
         fv = looking
@@ -98,7 +108,7 @@ def openface():
 
 if __name__ == "__main__":
     log = logging.getLogger('werkzeug')
-    # log.setLevel(logging.ERROR)
+    log.setLevel(logging.ERROR)
     app.jinja_env.auto_reload = True
     app.run(host='0.0.0.0', debug=True, port=5001, ssl_context='adhoc')
     # app.run(port=8008, debug=True)
