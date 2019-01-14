@@ -2,18 +2,18 @@ import json
 import os
 import re
 import numpy as np
-from scipy import io
-from scipy.stats import gaussian_kde
-from scipy.sparse import lil_matrix, csr_matrix, csc_matrix
-from sklearn.metrics.pairwise import cosine_similarity
 import threading
 import math
 import argparse
 import datetime
-from discriminator import discriminator
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+from scipy import io
+from scipy.stats import gaussian_kde
+from scipy.sparse import lil_matrix, csr_matrix, csc_matrix
+from sklearn.metrics.pairwise import cosine_similarity
+from connect import connect_state
 
 JOINT_NAME = [''] * 10
 JOINT_NAME[0] = 'Upper Body'
@@ -178,7 +178,7 @@ class State(object):
     def connect(self, state, threshold):
         ''' return confidence of connection'''
         dp, dv = self.calculate_difference(state.state[0], state.state[1])
-        confidence = discriminator(dp, dv, dif_mean, dif_std, threshold)
+        confidence = connect_state(dp, dv, dif_mean, dif_std, threshold)
         if confidence > threshold:
             return confidence
         else:

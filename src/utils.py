@@ -124,9 +124,7 @@ def sample_new_route(connects, m=10):
         return False
 
 def sample_from_recorded_routes(connects):
-    possibilities = []
-    for i in range(len(connects)):
-        possibilities.append(connects[i][40]/connects[i][41])
+    possibilities = [connects[i][40]/connects[i][41]*connects[i][42]/connects[i][43] for i in range(len(connects))]
     possibilities = list(map(lambda x: math.exp(-x), possibilities))
     s = sum(possibilities)
     possibilities = [x/s for x in possibilities]

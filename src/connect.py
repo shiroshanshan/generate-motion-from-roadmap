@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-def discriminator(state_dp, state_dv, mean, std, threshold):
+def connect_state(state_dp, state_dv, mean, std, threshold):
 
     difference = np.array([state_dp, state_dv])
     normalized_difference = (difference - mean) / std

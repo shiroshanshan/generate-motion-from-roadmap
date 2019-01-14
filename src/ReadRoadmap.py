@@ -40,7 +40,7 @@ class Roadmap(object):
         for i in range(self.length):
             next = np.array(self.matrix[i, :].todense()).flatten()
             if not np.any(next):
-                print('nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn')
+                print('==============================================')
                 print(i,"th state don't have any connected state!")
         ################## test ########################
         print('read roadmap successful')
@@ -75,7 +75,7 @@ class Roadmap(object):
 
         last = rotations[-1]
         timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        os.mkdir('/home/fan/generate-motion-from-roadmap/readed/{0}'.format(timenow))
+        os.mkdir('readed/{1}'.format(timenow))
 
 
         with open('readed/{0}/rotations.txt'.format(timenow),'w') as f:
@@ -134,7 +134,7 @@ class Roadmap(object):
 
     def save_every_ten(self):
         def save_every_ten_min():
-            with open('/home/fan/generate-motion-from-roadmap/roadmap/saved/routes.json', 'w') as f:
+            with open('roadmap/saved/routes.json', 'w') as f:
                 routes_dic = json.dumps(self.routes_dic)
                 f.write(routes_dic)
             timer = threading.Timer(600, save_every_ten_min)
@@ -146,15 +146,15 @@ class Roadmap(object):
 
 PATH = os.getcwd()
 
-roadmap = io.loadmat("{0}/roadmap/roadmap".format(PATH))["roadmap"]
+roadmap = io.loadmat("roadmap/roadmap")["roadmap"]
 
-with open('{0}/roadmap/states.txt'.format(PATH), 'r') as f:
+with open('roadmap/states.txt', 'r') as f:
     states = f.read()
     states = eval(states)
-with open('{0}/roadmap/routes.txt'.format(PATH), 'r') as f:
+with open('roadmap/routes.txt', 'r') as f:
     routes = f.read()
     routes = eval(routes)
-with open('{0}/roadmap/saved/routes.json'.format(PATH), 'r') as f:
+with open('roadmap/saved/routes.json', 'r') as f:
     routes_dic = f.read()
     routes_dic = eval(routes_dic)
 
