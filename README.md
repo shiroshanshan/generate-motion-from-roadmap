@@ -18,6 +18,7 @@ We need to cut video into segment before create roadmap the simplest way is to r
 <p align="center">
     <img src="/plot/intro/preprocess.jpg", width="640">
 </p>
+
 First run ```python src/PosGener.py -i {$VIDEO_PATH} -o {$PATH_TO_OPENPOSE} -p{PATH_TO_3d_POSE_BASELINE}``` to extract joint position from videos, this process will take some times and the output of openpose will be located in ```./openpsoe``` and the output of 3d pose estimation will be located in ```./3dpose```.
 
 Then run ```python src/AngleCalculor.py``` (default x-correction is 15, you can change it by your self) to calculate joint angle from joint position.
@@ -26,7 +27,9 @@ Then run ```python src/AngleCalculor.py``` (default x-correction is 15, you can 
 <p align="center">
     <img src="/plot/intro/flowchart.jpg", width="640">
 </p>
+
 Here we can create a roadmap by run ```python src/gene_raodmap.py``` to create a roadmap. Hierachical resampling will a lot of time, and you can change batch size and other parameters by yourself.
+
 <p align="center">
     <img src="/plot/intro/anim.gif", width="320">
 </p>
