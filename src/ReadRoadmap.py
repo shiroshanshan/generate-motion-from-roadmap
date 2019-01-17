@@ -74,6 +74,7 @@ class Roadmap(object):
             rotations = sample_from_recorded_routes(self.routes_dic[init_state])
 
         last = rotations[-1]
+        print(rotations)
         timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
         if write or plot:
@@ -114,7 +115,7 @@ class Roadmap(object):
             fig_name = 'readed/{0}/interpolated.png'.format(timenow)
             plt.savefig(fig_name)
 
-        rotations = filter(rotations)
+        rotations = filter(rotations, 3)
 
         if write:
             with open('readed/{0}/smoothed.txt'.format(timenow),'w') as f:

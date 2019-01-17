@@ -169,7 +169,7 @@ if __name__ == '__main__':
         position = read_files(POSE, files)
         rotationlist = []
         for frame, inposition in enumerate(position):
-            rotationlist.append(positions_to_rotation(inposition,frame,15))
+            rotationlist.append(positions_to_rotation(inposition,frame,20))
         target_dir = TARGET + files
         with open(target_dir, 'w') as f:
             write_rotation_file(f, rotationlist)

@@ -3,15 +3,6 @@
 		<title>MMD motion regeneration</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style>
-			body {
-				font-family: Monospace;
-				background-color: #fff;
-				color: #000;
-				margin: 0px;
-				overflow: hidden;
-			}
-		</style>
 		<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 		<link rel='stylesheet' href='{{ url_for('static', filename='css/main.css') }}'>
 	</head>
@@ -20,10 +11,12 @@
 		<div class="booth">
 			<video width="320" height="240" id="player" controls autoplay></video>
 		</div>
-		<div id="btn" style="position:absolute;left:91%;top:110px;">
+		<div id="btn" style="position:absolute;left:87%;top:110px;">
 			<button type="button" id="start" style="border-radius:8px;width:100px;height:28px;z-index:999;background:white;border:1px solid silver;">START</button>
 			<button type="button" id="stop" style="border-radius:8px;width:100px;height:28px;display:none;z-index:999;background:white;border:1px solid silver;">RELOAD</button>
 			<!-- <button type="button" id="capture" style="border-radius:8px;width:100px;height:25px;z-index:999;">CAPTURE</button> -->
+			<p id="gaze" style="font-size:16px;">Gaze:</p>
+			<p id="emotion" style="font-size:16px;">Emotion:</p>
 			<canvas id='snapshot' width=320 height=240 style="display:none;"></canvas>
 		</div>
 
@@ -48,7 +41,7 @@
 					var stats=new Stats();
 					stats.domElement.style.position = 'absolute';
 					stats.domElement.style.top = '30px';
-					stats.domElement.style.left = '92%';
+					stats.domElement.style.left = '87%';
 					stats.domElement.style.zIndex = 100;
 					document.body.appendChild(stats.dom);
 					requestAnimationFrame(function loop(){
@@ -81,6 +74,9 @@
 						contentType: false,
 						success: function(res){
 							shot();
+							document.getElementById("gaze").innerHTML = 'Gaze: ' + JSON.parse(res)["gaze"];
+							document.getElementById("emotion").innerHTML = 'Emotion: ' + JSON.parse(res)["emotion"];
+							console.log(JSON.parse(res)["emotion"]);
 						},
 					});
 				}
@@ -283,7 +279,7 @@
                   console.log(value);
                   mmdLoop();
                 });
-              }, time*950)}
+              }, time*980)}
 						);
 					}
 				})

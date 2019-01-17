@@ -57,9 +57,9 @@ class Searchloops:
         print('number of loops (length of two) : {0}'.format(self.twos))
         print('number of loops (length of three) : {0}'.format(int(self.threes)))
         with open(LOG_PATH, 'a') as f:
-            f.write('number of links: {0}'.format(self.links))
-            f.write('number of loops (length of two) : {0}'.format(self.twos))
-            f.write('number of loops (length of three) : {0}'.format(int(self.threes)))
+            f.write('number of links: {0}\n'.format(self.links))
+            f.write('number of loops (length of two) : {0}\n'.format(self.twos))
+            f.write('number of loops (length of three) : {0}\n'.format(int(self.threes)))
 
 """
 union find tree search
@@ -118,10 +118,10 @@ class Unionfind:
                 cnt = 0
                 for item in self.rs.keys():
                     print('number of states in union {0}: {1}'.format(cnt, len(self.rs[item])))
-                    f.write('number of states in union {0}: {1}'.format(cnt, len(self.rs[item])))
+                    f.write('number of states in union {0}: {1}\n'.format(cnt, len(self.rs[item])))
                     cnt += 1
                 print('number of union: {0}'.format(len(self.rs.keys())))
-                f.write('number of union: {0}'.format(len(self.rs.keys())))
+                f.write('number of union: {0}\n'.format(len(self.rs.keys())))
 
 
 class State(object):
@@ -339,14 +339,9 @@ class Roadmap(object):
 
         print('{0} states deleted during resampling'.format(l))
         with open(LOG_PATH, 'a') as f:
-            f.write('{0} states deleted during resampling'.format(l))
+            f.write('{0} states deleted during resampling\n'.format(l))
 
         return matrix, rdmplist, rtlist
-
-    """
-    decrease loops
-    """
-    
 
     """
     connect states between current state and next state
@@ -402,7 +397,7 @@ class Roadmap(object):
         successed = True
 
         with open(CONNECT_PATH + 'connect.txt', 'w') as f:
-            f.write(str(cnums))
+            f.write(str(cnums) + '\n')
 
         connect_image = self.cplot(cnums, plt)
         plt.xlabel('Connection')
@@ -425,7 +420,7 @@ class Roadmap(object):
     """
     def create_roadmap_matrix_and_resampling(self, data, threshold, resampling):
         with open(LOG_PATH, 'a') as f:
-            f.write('start create states @ threshold:{0} and resampling:{1}'.format(threshold, resampling))
+            f.write('start create states @ threshold:{0} and resampling:{1}\n'.format(threshold, resampling))
 
         self.create_states(data)
         roadmap, roadmap_list, route_list = self.connect_origin()
@@ -439,6 +434,14 @@ class Roadmap(object):
         roadmap_list = [roadmap_list[i].state for i in range(len(roadmap_list))]
 
         return roadmap, roadmap_list, route_list
+
+    """
+    decrease loops
+    """
+    def connection_filter(self, roadmap):
+        for i in range(len(roadmap.rows)):
+            if len(roadmap.rows[i]) == 1 and roadmap.rows[roadmap.rows[i][0]][0] == i:
+                roadmap 
 
     """
     remove isolating state recursively
@@ -488,33 +491,58 @@ class Roadmap(object):
         return roadmap_dic
 
     """
+    eliminate isolated island
+    """
+    def eliminate_isolated_island(self, roadmap, roadmap_list, route_list):
+        sets = [(i,j) for i in range(len(roadmap.rows)) for j in roadmap.rows[i]]
+        u = Unionfind(sets)
+        u.createtree()
+        u.tree(True)
+
+        delete = []
+        m = max([len(item) for item in u.rs.values()])
+        for key, item in u.rs.items():
+            if len(item) == m:
+                pass
+            else:
+                delete += item
+
+        row = np.arange(roadmap.shape[0])
+        row = np.where(np.logical_not(np.in1d(row, delete)))[0]
+        roadmap = roadmap[row,:]
+        roadmap = roadmap[:,row]
+        roadmap_list = [roadmap_list[i] for i in range(len(roadmap_list)) if i not in delete]
+        route_list = [route_list[i] for i in range(len(route_list)) if i not in delete]
+
+        print('%d states removed because of isolated groups\n'%(len(delete)))
+        with open(LOG_PATH, 'a') as f:
+            f.write('%d states removed because of isolated groups\n'%(len(delete)))
+
+        return roadmap, roadmap_list, route_list
+
+
+    """
     save at ./roadmap/${timenow}
     """
     def save_roadmap(self, path, data, threshold, resampling):
         roadmap, roadmap_list, route_list = self.create_roadmap_matrix_and_resampling(data, threshold, resampling)
         roadmap, roadmap_list, route_list = self.eliminate_isolated_state_matrix(roadmap, roadmap_list, route_list)
+        roadmap, roadmap_list, route_list = self.eliminate_isolated_island(roadmap, roadmap_list, route_list)
+
         io.savemat(path + "roadmap", {"roadmap":roadmap})
         s = Searchloops(roadmap)
         s.search()
 
-        sets = []
-        for i in range(len(roadmap.rows)):
-            for j in roadmap.rows[i]:
-                sets.append((i,j))
-        u = Unionfind(sets)
-        u.createtree()
-        u.tree(True)
-
         with open(path + 'states.txt', 'w') as f:
-            f.write(str(np.array(roadmap_list).tolist()))
+            f.write(str(np.array(roadmap_list).tolist()) + '\n')
         with open(path + 'routes.txt', 'w') as f:
-            f.write(str(route_list))
+            f.write(str(route_list) + '\n')
 
         print('successed save')
         print('roadmap matrix @ size of: {0}x{0}'.format(len(roadmap.rows)))
         with open(LOG_PATH, 'a') as f:
-            f.write('successed save')
-            f.write('roadmap matrix @ size of: {0}x{0}'.format(len(roadmap.rows)))
+            f.write('successed save\n')
+            f.write('roadmap matrix @ size of: {0}x{0}\n'.format(len(roadmap.rows)))
 
 if __name__ == '__main__':
 

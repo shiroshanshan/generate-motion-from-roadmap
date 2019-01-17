@@ -4,3 +4,10 @@
   top: 30px;
   /* margin: 100 auto; */
 }
+body{
+  font-family: Monospace;
+  background-color: #fff;
+  color: #000;
+  margin: 0px;
+  overflow: hidden;
+}

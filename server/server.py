@@ -63,7 +63,7 @@ def openface():
         df = pd.read_csv('{0}/server/static/output/{1}/{1}.csv'.format(PATH, timenow), sep=',')
     except:
         print('gaze detection: no human face detected')
-        return 'no gaze detected'
+        return json.dumps({'gaze': 'none', 'emotion': 'none'})
 
     #emotion recognition from action units
     EMOTION = ['anger', 'contempt', 'disgust', 'fear', 'happy', 'sadness', 'surprise', 'unsure']
@@ -113,7 +113,8 @@ def openface():
         ec += 1
         ev += happy
 
-    return 'finished'
+    return json.dumps({'gaze': 'detected', 'emotion': EMOTION[emotion]}) \
+    if looking else json.dumps({'gaze': 'not detected', 'emotion': EMOTION[emotion]})
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='flask server for interaction system')
@@ -126,7 +127,7 @@ if __name__ == "__main__":
     plot = args.plot
 
     log = logging.getLogger('werkzeug')
-    # log.setLevel(logging.ERROR)
+    log.setLevel(logging.ERROR)
     app.jinja_env.auto_reload = True
     # app.run(host='0.0.0.0', debug=False, port=5001, ssl_context='adhoc', threaded=False, processes=3)
     app.run(host='0.0.0.0', debug=True, port=5001, ssl_context='adhoc', threaded=True)
