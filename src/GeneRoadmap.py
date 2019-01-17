@@ -368,7 +368,7 @@ class Roadmap(object):
     """
     connect states by dp and dv
     """
-    def connect_probabilistic(self, matrix, rdmplist, cthreshold):
+    def connect_probabilistic(self, matrix, rdmplist, cthreshold, ignore):
         successed = False
         cnums = []
         cnt = 0
@@ -385,7 +385,7 @@ class Roadmap(object):
         for i in range(len(rdmplist)):
             cnum = 0
             for j in range(len(rdmplist)):
-                if i == j:
+                if abs(i-j) <= ignore:
                     pass
                 else:
                     v = rdmplist[i].connect(rdmplist[j], cthreshold)
@@ -418,14 +418,14 @@ class Roadmap(object):
     """
     use matrix connect roadmap and resampling
     """
-    def create_roadmap_matrix_and_resampling(self, data, threshold, resampling):
+    def create_roadmap_matrix_and_resampling(self, data, threshold, resampling, ignore):
         with open(LOG_PATH, 'a') as f:
             f.write('start create states @ threshold:{0} and resampling:{1}\n'.format(threshold, resampling))
 
         self.create_states(data)
         roadmap, roadmap_list, route_list = self.connect_origin()
         roadmap, roadmap_list, route_list = self.resampling(roadmap, roadmap_list, route_list, resampling)
-        roadmap, roadmap_list = self.connect_probabilistic(roadmap, roadmap_list, threshold)
+        roadmap, roadmap_list = self.connect_probabilistic(roadmap, roadmap_list, threshold, ignore)
 
         '''make sure all states will not connect to itself'''
         for i in range(len(roadmap.rows)):
@@ -435,13 +435,13 @@ class Roadmap(object):
 
         return roadmap, roadmap_list, route_list
 
-    """
-    decrease loops
-    """
-    def connection_filter(self, roadmap):
-        for i in range(len(roadmap.rows)):
-            if len(roadmap.rows[i]) == 1 and roadmap.rows[roadmap.rows[i][0]][0] == i:
-                roadmap 
+    # """
+    # decrease loops
+    # """
+    # def connection_filter(self, roadmap):
+    #     for i in range(len(roadmap.rows)):
+    #         if len(roadmap.rows[i]) == 1 and roadmap.rows[roadmap.rows[i][0]][0] == i:
+    #             roadmap
 
     """
     remove isolating state recursively
@@ -524,8 +524,8 @@ class Roadmap(object):
     """
     save at ./roadmap/${timenow}
     """
-    def save_roadmap(self, path, data, threshold, resampling):
-        roadmap, roadmap_list, route_list = self.create_roadmap_matrix_and_resampling(data, threshold, resampling)
+    def save_roadmap(self, path, data, threshold, resampling, ignore):
+        roadmap, roadmap_list, route_list = self.create_roadmap_matrix_and_resampling(data, threshold, resampling, ignore)
         roadmap, roadmap_list, route_list = self.eliminate_isolated_state_matrix(roadmap, roadmap_list, route_list)
         roadmap, roadmap_list, route_list = self.eliminate_isolated_island(roadmap, roadmap_list, route_list)
 
@@ -553,10 +553,13 @@ if __name__ == '__main__':
                         default=False, help='whether sample @30 fps, default is 10 fps')
     parser.add_argument('-r', '--resampling', dest='resampling', type=int,
                         default=20, help='threshold for resampling, default is 20')
+    parser.add_argument('-i', '--ignore', dest='ignore', type=int,
+                        default=3, help='ignore nereby states when create connection')
     args = parser.parse_args()
     threshold = args.threshold
     sampling = args.sampling
     resampling = args.resampling
+    ignore = args.ignore
 
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     PATH = os.getcwd()
@@ -601,4 +604,4 @@ if __name__ == '__main__':
     data = np.array(data)
 
     roadmap = Roadmap(length)
-    roadmap.save_roadmap('{0}/roadmap/threshold{1}_re{2}/'.format(PATH, threshold, resampling), data, threshold, resampling)
+    roadmap.save_roadmap('{0}/roadmap/threshold{1}_re{2}/'.format(PATH, threshold, resampling), data, threshold, resampling, ignore)
