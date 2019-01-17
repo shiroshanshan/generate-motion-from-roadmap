@@ -56,7 +56,7 @@ class Roadmap(object):
         routes = []
         # print('vmd file generating')
         rotations.append(init_state)
-        frames = 40
+        frames = 50
         self.init_states_stack.append(init_state)
 
         if sample_new_route(self.routes_dic[init_state]):
@@ -75,57 +75,65 @@ class Roadmap(object):
 
         last = rotations[-1]
         timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        os.mkdir('readed/{1}'.format(timenow))
 
+        if write or plot:
+            os.mkdir('readed/{0}'.format(timenow))
 
-        with open('readed/{0}/rotations.txt'.format(timenow),'w') as f:
-            f.write(str(rotations))
+        if write:
+            with open('readed/{0}/rotations.txt'.format(timenow),'w') as f:
+                f.write(str(rotations))
 
         self.routes_stack.append(rotations)
         ## [0] => position, [1] => velocity
         rotations = np.array(list(map(lambda x: self.states[x][0], rotations)))
 
-        with open('readed/{0}/raw_data.txt'.format(timenow),'w') as f:
-            write_rotation_file(f, rotations)
+        if write:
+            with open('readed/{0}/raw_data.txt'.format(timenow),'w') as f:
+                write_rotation_file(f, rotations)
 
         # os.mkdir('readed/{0}'.format(timenow))
-        plt.figure(1)
-        raw_data_image = showAnimCurves(rotations, plt)
-        plt.xlabel('Time(Second)')
-        plt.ylabel('Rotations(Degree)')
-        fig_name = 'readed/{0}/raw_data.png'.format(timenow)
-        plt.savefig(fig_name)
+        if plot:
+            plt.figure(1)
+            raw_data_image = showAnimCurves(rotations, plt)
+            plt.xlabel('Time(Second)')
+            plt.ylabel('Rotations(Degree)')
+            fig_name = 'readed/{0}/raw_data.png'.format(timenow)
+            plt.savefig(fig_name)
 
         rotations = interpolation(rotations)
 
-        with open('readed/{0}/interpolated.txt'.format(timenow),'w') as f:
-            write_rotation_file(f, rotations)
+        if write:
+            with open('readed/{0}/interpolated.txt'.format(timenow),'w') as f:
+                write_rotation_file(f, rotations)
 
-        plt.figure(2)
-        raw_data_image = showAnimCurves(rotations, plt)
-        plt.xlabel('Time(Second)')
-        plt.ylabel('Rotations(Degree)')
-        fig_name = 'readed/{0}/interpolated.png'.format(timenow)
-        plt.savefig(fig_name)
+        if plot:
+            plt.figure(2)
+            raw_data_image = showAnimCurves(rotations, plt)
+            plt.xlabel('Time(Second)')
+            plt.ylabel('Rotations(Degree)')
+            fig_name = 'readed/{0}/interpolated.png'.format(timenow)
+            plt.savefig(fig_name)
 
         rotations = filter(rotations)
 
-        with open('readed/{0}/smoothed.txt'.format(timenow),'w') as f:
-            write_rotation_file(f, list(rotations))
+        if write:
+            with open('readed/{0}/smoothed.txt'.format(timenow),'w') as f:
+                write_rotation_file(f, list(rotations))
 
-        plt.figure(3)
-        smoothed_image = showAnimCurves(rotations, plt)
-        plt.xlabel('Time(Second)')
-        plt.ylabel('Rotations(Degree)')
-        fig_name = 'readed/{0}/smoothed.png'.format(timenow)
-        plt.savefig(fig_name)
+        if plot:
+            plt.figure(3)
+            smoothed_image = showAnimCurves(rotations, plt)
+            plt.xlabel('Time(Second)')
+            plt.ylabel('Rotations(Degree)')
+            fig_name = 'readed/{0}/smoothed.png'.format(timenow)
+            plt.savefig(fig_name)
 
-        plt.figure(4)
-        raw_data_image = plot_route_transfer(routes, plt)
-        plt.xlabel('Time(Second)')
-        plt.ylabel('Route(#)')
-        fig_name = 'readed/{0}/route_transfer.png'.format(timenow)
-        plt.savefig(fig_name)
+            plt.figure(4)
+            raw_data_image = plot_route_transfer(routes, plt)
+            plt.xlabel('Time(Second)')
+            plt.ylabel('Route(#)')
+            fig_name = 'readed/{0}/route_transfer.png'.format(timenow)
+            plt.savefig(fig_name)
 
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
         print('vmd file successfully saved')

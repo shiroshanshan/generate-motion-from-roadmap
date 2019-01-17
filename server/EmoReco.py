@@ -17,9 +17,9 @@ class LCS:
         return dp[-1][-1]
 
     def predict(self, s):
-        sim = max([self.lcs_sim(r, s) for r in self.relation])
-        emotion = sims.index(sim)
-        if len(s) == 1:
+        sims = [self.lcs_sim(r, s) for r in self.relation]
+        emotion = sims.index(max(sims))
+        if len(s) <= 2:
             return -1
         else:
             return emotion

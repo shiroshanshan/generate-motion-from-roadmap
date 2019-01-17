@@ -7,13 +7,14 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
 def interpolation(data):
+    frames = len(data)
     new_data = np.zeros((data.shape[0]*3, data.shape[1], data.shape[2]))
     for i in range(data.shape[1]):
         for j in range(data.shape[2]):
             y = data[:,i,j]
-            x = np.linspace(0, 120, num=40, endpoint=True)
+            x = np.linspace(0, frames * 3, num=frames, endpoint=True)
             f = interp1d(x,y,kind='cubic')
-            x_new = np.linspace(0, 120, num=120, endpoint=True)
+            x_new = np.linspace(0, frames * 3, num=frames * 3, endpoint=True)
             new_data[:,i,j] = f(x_new)
     return new_data
 

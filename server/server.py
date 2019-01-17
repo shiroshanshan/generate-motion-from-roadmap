@@ -20,7 +20,7 @@ bone_csv_file = '{0}/model.csv'.format(PATH)
 
 @app.route("/")
 def index():
-    return render_template('betterone.html')
+    return render_template('miku.html')
 
 @app.route("/initate", methods=['GET'])
 def initate():
@@ -126,6 +126,7 @@ if __name__ == "__main__":
     plot = args.plot
 
     log = logging.getLogger('werkzeug')
-    log.setLevel(logging.ERROR)
+    # log.setLevel(logging.ERROR)
     app.jinja_env.auto_reload = True
-    app.run(host='0.0.0.0', debug=True, port=5001, ssl_context='adhoc')
+    # app.run(host='0.0.0.0', debug=False, port=5001, ssl_context='adhoc', threaded=False, processes=3)
+    app.run(host='0.0.0.0', debug=True, port=5001, ssl_context='adhoc', threaded=True)

@@ -344,6 +344,11 @@ class Roadmap(object):
         return matrix, rdmplist, rtlist
 
     """
+    decrease loops
+    """
+    
+
+    """
     connect states between current state and next state
     """
     def connect_origin(self):
