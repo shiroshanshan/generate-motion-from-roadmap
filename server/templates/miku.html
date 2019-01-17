@@ -107,31 +107,6 @@
 
 			var mesh, renderTarget;
 
-			var blinkMorphName = 'まばたき';
-			var blinkVmd = {
-				metadata: {
-					name: 'blink',
-					coordinateSystem: 'right',
-					morphCount: 11,
-					cameraCount: 0,
-					motionCount: 0
-				},
-				morphs: [
-					{ frameNum:   0, morphName: blinkMorphName, weight: 0.0 },
-					{ frameNum:  10, morphName: blinkMorphName, weight: 0.0 },
-					{ frameNum:  15, morphName: blinkMorphName, weight: 1.0 },
-					{ frameNum:  20, morphName: blinkMorphName, weight: 0.0 },
-					{ frameNum:  40, morphName: blinkMorphName, weight: 0.0 },
-					{ frameNum:  43, morphName: blinkMorphName, weight: 1.0 },
-					{ frameNum:  46, morphName: blinkMorphName, weight: 0.0 },
-					{ frameNum:  49, morphName: blinkMorphName, weight: 0.0 },
-					{ frameNum:  52, morphName: blinkMorphName, weight: 1.0 },
-					{ frameNum:  55, morphName: blinkMorphName, weight: 0.0 },
-					{ frameNum: 200, morphName: blinkMorphName, weight: 0.0 },
-				],
-				cameras: [],
-				motions: []
-			};
 			var poseParams = [
 				{
 					name: 'basic',
@@ -154,8 +129,6 @@
 
 			var ready = false;
 
-			var textureLoader = new THREE.TextureLoader();
-
 			var clock = new THREE.Clock();
 
 			var onProgress = function ( xhr ) {
@@ -175,6 +148,31 @@
 			animate();
 
 			function init() {
+				var blinkMorphName = 'まばたき';
+				var blinkVmd = {
+					metadata: {
+						name: 'blink',
+						coordinateSystem: 'right',
+						morphCount: 11,
+						cameraCount: 0,
+						motionCount: 0
+					},
+					morphs: [
+						{ frameNum:   0, morphName: blinkMorphName, weight: 0.0 },
+						{ frameNum:  10, morphName: blinkMorphName, weight: 0.0 },
+						{ frameNum:  15, morphName: blinkMorphName, weight: 1.0 },
+						{ frameNum:  20, morphName: blinkMorphName, weight: 0.0 },
+						{ frameNum:  40, morphName: blinkMorphName, weight: 0.0 },
+						{ frameNum:  43, morphName: blinkMorphName, weight: 1.0 },
+						{ frameNum:  46, morphName: blinkMorphName, weight: 0.0 },
+						{ frameNum:  49, morphName: blinkMorphName, weight: 0.0 },
+						{ frameNum:  52, morphName: blinkMorphName, weight: 1.0 },
+						{ frameNum:  55, morphName: blinkMorphName, weight: 0.0 },
+						{ frameNum: 200, morphName: blinkMorphName, weight: 0.0 },
+					],
+					cameras: [],
+					motions: []
+				};
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
@@ -209,11 +207,9 @@
 				// renderer
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				//renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.setClearColor( new THREE.Color( 0XFFFFFF ) );
 				container.appendChild( renderer.domElement );
-
 				effect = new THREE.OutlineEffect( renderer );
 
 				renderTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight );
@@ -224,32 +220,19 @@
 
 				loadModels( function () {
 
-					// miku = mesh;
-
 					loadVpds( mesh, function () {
 
 						helper.poseAsVpd( mesh, poses[ 'basic' ] );
-
 						loadVmds( mesh, function () {
 
-							// removeBlinkFromMorphAnimations( mesh );
-
 							loader.pourVmdIntoModel( mesh, blinkVmd, 'blink' );
-
 							helper.setAnimation( mesh );
-
-							startBlink( mesh );
-
 							ready = true;
 
 						} );
-
 					} );
-
 				} );
-
 				window.addEventListener( 'resize', onWindowResize, false );
-
 			}
 
 			// send a request and start sampling from roadmap
@@ -263,9 +246,12 @@
 					url: '/initate',
 					cache: false,
 					success: function(res){
+
 						loadMotion(res).then(function(value){
+
 							console.log(value);
 							updateMotion().then(function(value){
+
                 console.log(value);
 								startRecord();
 								mmdLoop();
@@ -283,33 +269,24 @@
 					url: '/gene_motion',
 					cache: false,
 					success: function(res){
+
 						loadMotion(res).then(function(value){
+
 							console.log(value);
 							var time = mesh.geometry.animations[1].duration - mesh.mixer.clipAction( motionParams[0].name ).time - clock.getDelta();
 							console.log('sleep time: %f', time);
-              if(time > 0){
-                setTimeout(function(){
-                  motionParams.splice(0,1);
-                  mesh.geometry.animations.splice(1,1);
-                  updateMotion().then(function(value){
-                    console.log(value);
-                    mmdLoop();
-                  });
-                }, time*950)
-              }else{
-                (function(){
-                  motionParams.splice(0,1);
-                  mesh.geometry.animations.splice(1,1);
-                  updateMotion().then(function(value){
-                    console.log(value);
-                    mmdLoop();
-                  });
-                })();
-              }
-						});
-						}
+              setTimeout(function(){
+                motionParams.splice(0,1);
+                mesh.geometry.animations.splice(1,1);
+                updateMotion().then(function(value){
+
+                  console.log(value);
+                  mmdLoop();
+                });
+              }, time*950)}
+						);
 					}
-				)
+				})
 			}
 
 			// stop download motion file and update motion
@@ -318,6 +295,7 @@
 				currentBtnS = document.getElementById("stop");
 				currentBtnR.style.display = "inline";
 				currentBtnS.style.display = "none";
+
 				location.reload();
 			}
 
@@ -327,6 +305,7 @@
 					name: res,
 					files: [ 'static/vmd/'+ res +'.vmd' ]
 				};
+
 				motionParams.push(tmp);
 				loadOneVmd( mesh );
 
@@ -340,13 +319,13 @@
 
 			function	updateMotion(){
         console.log('updating...');
+
 				currentMotion = motionParams[0].name;
         console.log('motion name: %s', currentMotion);
+
 				mesh.mixer.clipAction( currentMotion ).play();
 				mesh.mixer.clipAction( currentMotion ).loop = THREE.LoopOnce;
 				mesh.mixer.clipAction( currentMotion ).clampWhenFinished = true;
-
-				startBlink( mesh );
 
 				animate();
 
@@ -470,13 +449,6 @@
 
 			}
 
-			function getLength( p1, p2 ) {
-
-			     return Math.sqrt( Math.pow( p1.x - p2.x, 2.0 ) + Math.pow( p1.y - p2.y, 2.0 ) + Math.pow( p1.z - p2.z, 2.0 ) );
-
-			}
-
-
 			function animate() {
 
 				requestAnimationFrame( animate );
@@ -521,11 +493,6 @@
 
 			}
 
-			function startBlink ( mesh ) {
-
-				mesh.mixer.clipAction( 'blinkMorph' ).play();
-
-			}
 			</script>
 	</body>
 </html>
