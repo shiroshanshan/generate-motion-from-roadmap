@@ -242,13 +242,8 @@
 					url: '/initate',
 					cache: false,
 					success: function(res){
-
-						loadMotion(res).then(function(value){
-
-							console.log(value);
-							updateMotion().then(function(value){
-
-                console.log(value);
+						loadMotion(res, function(){
+							updateMotion(function(){
 								startRecord();
 								mmdLoop();
 							});
@@ -265,22 +260,17 @@
 					url: '/gene_motion',
 					cache: false,
 					success: function(res){
-
-						loadMotion(res).then(function(value){
-
-							console.log(value);
+						loadMotion(res, function(){
 							var time = mesh.geometry.animations[1].duration - mesh.mixer.clipAction( motionParams[0].name ).time - clock.getDelta();
 							console.log('sleep time: %f', time);
-              setTimeout(function(){
-                motionParams.splice(0,1);
-                mesh.geometry.animations.splice(1,1);
-                updateMotion().then(function(value){
-
-                  console.log(value);
-                  mmdLoop();
-                });
-              }, time*980)}
-						);
+							setTimeout(function(){
+							  motionParams.splice(0,1);
+							  mesh.geometry.animations.splice(1,1);
+								updateMotion(function(){
+									mmdLoop();
+								});
+							}, time*1000);
+						})
 					}
 				})
 			}
@@ -295,25 +285,31 @@
 				location.reload();
 			}
 
-			function loadMotion(res){
+			function loadMotion(res, callback){
         console.log('loading...');
+				var loop = true;
 				var tmp = {
 					name: res,
 					files: [ 'static/vmd/'+ res +'.vmd' ]
 				};
 
 				motionParams.push(tmp);
-				loadOneVmd( mesh );
 
-				return new Promise(function (resolve, reject){
-					setTimeout(function(){
-					resolve('loaded!');
-				}, 300)
-				})
+				var param = motionParams[ motionParams.length - 1 ];
+
+				loader.loadVmds( param.files, function ( vmd ) {
+
+					loader.pourVmdIntoModel( mesh, vmd, param.name );
+
+					loop = false;
+
+					callback();
+
+				}, onProgress, onError );
 
 			}
 
-			function	updateMotion(){
+			function	updateMotion(callback){
         console.log('updating...');
 
 				currentMotion = motionParams[0].name;
@@ -323,13 +319,9 @@
 				mesh.mixer.clipAction( currentMotion ).loop = THREE.LoopOnce;
 				mesh.mixer.clipAction( currentMotion ).clampWhenFinished = true;
 
-				animate();
+				update();
 
-				return new Promise(function (resolve, reject){
-					setTimeout(function(){
-					resolve('updated!');
-				}, 50)
-				})
+				callback();
 
 			}
 
@@ -393,18 +385,6 @@
 				}
 
 				load( 0 );
-
-			}
-
-			function loadOneVmd ( mesh, callback ) {
-
-				var param = motionParams[ motionParams.length - 1 ];
-
-				loader.loadVmds( param.files, function ( vmd ) {
-
-					loader.pourVmdIntoModel( mesh, vmd, param.name );
-
-				}, onProgress, onError );
 
 			}
 
