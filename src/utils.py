@@ -2,7 +2,7 @@ import re
 import numpy as np
 import math
 import random
-from scipy import signal
+from scipy import signal, fftpack
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 
@@ -45,32 +45,9 @@ def select_policy(init, next_states, policy):
 
     return idxes[np.random.choice(np.arange(len(idxes)),p=possibilities)]
 
-def filter(data, fc=4):
-    # fps = 30
-    # n = len(data)
-    # dt = 1./fps
-    # f = 1
-    # fn = 1/(2*dt)
-    #
-    # fp = 2
-    # fs = 3
-    # gpass = 1
-    # gstop = 40
-    # Wp = fp/fn
-    # Ws = fs/fn
-    #
-    # N, Wn = signal.cheb1ord(Wp, Ws, gpass, gstop)
-    # b2, a2 = signal.cheby1(N, gpass, Wn, "low")
-    #
-    # data = np.array(data)
-    # for i in range(data.shape[1]):
-    #     for j in range(data.shape[2]):
-    #         y = data[:,i,j]
-    #         y2 = signal.filtfilt(b2, a2, y)
-    #         data[:,i,j] = y2
-    #
-    # return data
+def filter(data, plot, timenow, cutoff=4):
 
+    amplitude = 0
     fps = 30
     N = len(data)
     dt = 1./fps
@@ -81,15 +58,30 @@ def filter(data, fc=4):
         for j in range(data.shape[2]):
             f = data[:,i,j]
             F = np.fft.fft(f)
-            F = F/(N/2.)
-            F[0] = F[0]/2.
+            # F_abs = np.abs(F)
+            # F_abs_amp = F_abs / N * 2
+            # F_abs_amp[0] = F_abs_amp[0] / 2
             F2 = F.copy()
-            F2[(freq > fc)] = 0
+            F2 = F2 / N * 2.
+            F2[0] = F2[0] / 2.
+            F2[(freq > cutoff)] = 0
+            F2_abs = np.abs(F2)
+            amplitude += F2_abs
             f2 = np.fft.ifft(F2)
             f2 = np.real(f2*N)
             data[:,i,j] = f2
 
-    return data
+    if plot:
+        plt.figure()
+        plt.plot(amplitude)
+        plt.xlabel('Frequence')
+        plt.ylabel('Amplitude')
+        fig_name = 'readed/{0}/freqs.png'.format(timenow)
+        plt.savefig(fig_name)
+    proportion = sum(amplitude[:5])/sum(amplitude)
+    print('proportion below 1Hz: ', proportion)
+
+    return data, proportion
 
 def showAnimCurves(animData, _plt):
     animData = np.array(animData)

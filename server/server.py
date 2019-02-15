@@ -29,16 +29,16 @@ def initate():
     init_state = rdp.init_state()
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     vmd_file = '{0}/server/static/vmd/{1}.vmd'.format(PATH, timenow)
-    last_state = rdp.motion_generation(init_state, vmd_file, bone_csv_file, plot, write)
-    return timenow
+    last_state, proportion = rdp.motion_generation(init_state, vmd_file, bone_csv_file, plot, write)
+    return json.dumps({'timenow': timenow, 'proportion': proportion})
 
 @app.route("/gene_motion", methods=['GET'])
 def gene_motion():
     global last_state
     timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     vmd_file = '{0}/server/static/vmd/{1}.vmd'.format(PATH, timenow)
-    last_state = rdp.motion_generation(last_state, vmd_file, bone_csv_file, plot, write)
-    return timenow
+    last_state, proportion = rdp.motion_generation(last_state, vmd_file, bone_csv_file, plot, write)
+    return json.dumps({'timenow': timenow, 'proportion': proportion})
 
 @app.route("/download", methods=['POST'])
 def download():

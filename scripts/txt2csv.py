@@ -19,17 +19,17 @@ def line2list(data_string):
 
     return line
 
-CSVDIR = '{0}/csv/'.format(PATH)
+CSVDIR = '{0}/csv/standard'.format(PATH)
 DIR = '{0}/rotation/'.format(PATH)
 joint = ["index", "上半身", "下半身", "首", "頭", "左肩", "左腕", "左ひじ","右肩", "右腕", "右ひじ"]
 joints = []
 for item in joint:
     if item == 'index':
-	joints.append(item)
+        joints.append(item)
     else:
-	joints.append(item+'_x')
-	joints.append(item+'_y')
-	joints.append(item+'_z')
+    	joints.append(item+'_x')
+    	joints.append(item+'_y')
+    	joints.append(item+'_z')
 files = os.listdir(DIR)
 print('%d files need to be process'%(len(files)))
 for file in files:

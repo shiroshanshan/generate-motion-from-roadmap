@@ -73,7 +73,7 @@ class Roadmap(object):
         else:
             rotations = sample_from_recorded_routes(self.routes_dic[init_state])
 
-        last = rotations[-1]
+        last = rotations[-10]
         print(rotations)
         timenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
@@ -94,8 +94,8 @@ class Roadmap(object):
 
         # os.mkdir('readed/{0}'.format(timenow))
         if plot:
-            plt.figure(1)
-            raw_data_image = showAnimCurves(rotations, plt)
+            plt.figure()
+            raw_data_image = showAnimCurves(rotations[:40], plt)
             plt.xlabel('Time(Second)')
             plt.ylabel('Rotations(Degree)')
             fig_name = 'readed/{0}/raw_data.png'.format(timenow)
@@ -108,28 +108,28 @@ class Roadmap(object):
                 write_rotation_file(f, rotations)
 
         if plot:
-            plt.figure(2)
-            raw_data_image = showAnimCurves(rotations, plt)
+            plt.figure()
+            raw_data_image = showAnimCurves(rotations[:120], plt)
             plt.xlabel('Time(Second)')
             plt.ylabel('Rotations(Degree)')
             fig_name = 'readed/{0}/interpolated.png'.format(timenow)
             plt.savefig(fig_name)
 
-        rotations = filter(rotations, 3)
+        rotations, proportion = filter(rotations, plot, timenow, 2)
 
         if write:
             with open('readed/{0}/smoothed.txt'.format(timenow),'w') as f:
                 write_rotation_file(f, list(rotations))
 
         if plot:
-            plt.figure(3)
-            smoothed_image = showAnimCurves(rotations, plt)
+            plt.figure()
+            smoothed_image = showAnimCurves(rotations[:120], plt)
             plt.xlabel('Time(Second)')
             plt.ylabel('Rotations(Degree)')
             fig_name = 'readed/{0}/smoothed.png'.format(timenow)
             plt.savefig(fig_name)
 
-            plt.figure(4)
+            plt.figure()
             raw_data_image = plot_route_transfer(routes, plt)
             plt.xlabel('Time(Second)')
             plt.ylabel('Route(#)')
@@ -139,7 +139,7 @@ class Roadmap(object):
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
         print('vmd file successfully saved')
 
-        return last
+        return last, proportion
 
     def save_every_ten(self):
         def save_every_ten_min():
@@ -152,6 +152,14 @@ class Roadmap(object):
 
         timer = threading.Timer(600, save_every_ten_min)
         timer.start()
+
+    def test_filter_param(self, vmd_file, bone_csv_file, fc):
+        rotations = [15063, 15064, 15065, 15066, 15067, 4852, 14793, 4834, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 8849, 8850, 8851, 8852, 329, 328, 342, 415, 3806, 4641, 7807, 7808]
+        rotations = np.array(list(map(lambda x: self.states[x][0], rotations)))
+        rotations = interpolation(rotations)
+        rotations = filter(rotations, False, 0, fc)
+        generate_vmd_file(rotations, vmd_file, bone_csv_file)
+        print('test file created')
 
 PATH = os.getcwd()
 
@@ -172,12 +180,15 @@ rdp = Roadmap()
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='generate motion file from roadmap')
     parser.add_argument('-p', '--plot', dest='plot', type=bool,
-                        help='plot images')
+                        default=False, help='plot images')
     parser.add_argument('-w', '--write', dest='write', type=bool,
-                        help='write files')
+                        default=False, help='write files')
+    parser.add_argument('-i', '--information', dest='information', type=bool,
+                        default=False, help='debug information')
     args = parser.parse_args()
     plot = args.plot
     write = args.write
+    information = args.information
 
     roadmap = io.loadmat("/home/fan/generate-motion-from-roadmap/roadmap/roadmap")["roadmap"]
 

@@ -3,7 +3,7 @@
 		<title>MMD motion regeneration</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+		<link rel="shortcut icon" href='{{ url_for('static', filename='favicon.ico') }}'>
 		<link rel='stylesheet' href='{{ url_for('static', filename='css/main.css') }}'>
 	</head>
 
@@ -14,6 +14,7 @@
 		<div id="btn" style="position:absolute;left:87%;top:110px;">
 			<button type="button" id="start" style="border-radius:8px;width:100px;height:28px;z-index:999;background:white;border:1px solid silver;">START</button>
 			<button type="button" id="stop" style="border-radius:8px;width:100px;height:28px;display:none;z-index:999;background:white;border:1px solid silver;">RELOAD</button>
+			<button type="button" id="playonce" style="border-radius:8px;width:100px;height:28px;z-index:999;background:white;border:1px solid silver;">PLAY ONCE</button>
 			<!-- <button type="button" id="capture" style="border-radius:8px;width:100px;height:25px;z-index:999;">CAPTURE</button> -->
 			<p id="gaze" style="font-size:16px;">Gaze:</p>
 			<p id="emotion" style="font-size:16px;">Emotion:</p>
@@ -32,70 +33,27 @@
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/Detector.js"></script>
 		<script src="https://cdn.rawgit.com/mrdoob/three.js/r87/examples/js/libs/dat.gui.min.js"></script>
 		<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+		<script src='{{ url_for('static', filename='js/recorder.js') }}'></script>
+		<script src='{{ url_for('static', filename='js/indicator.js') }}'></script>
+		<script src='{{ url_for('static', filename='js/noise.js') }}'></script>
 		<script id="updateMotion">
 
-			//State indicator
-			(function(){
-				var script=document.createElement('script');
-				script.onload=function(){
-					var stats=new Stats();
-					stats.domElement.style.position = 'absolute';
-					stats.domElement.style.top = '30px';
-					stats.domElement.style.left = '87%';
-					stats.domElement.style.zIndex = 100;
-					document.body.appendChild(stats.dom);
-					requestAnimationFrame(function loop(){
-						stats.update();
-						requestAnimationFrame(loop)
-					});
-				};
-				script.src='//mrdoob.github.io/stats.js/build/stats.min.js';
-				document.head.appendChild(script);
-			})()
+			$("#start").click(function(){initiate();});
+			$("#stop").click(function(){stop();});
+			$("#playonce").click(function(){playOnce(10);});
 
-			//Video record and upload
-			function startRecord(){
-			  var player = document.getElementById('player');
-				var snapshotCanvas = document.getElementById('snapshot');
-
-			  var handleSuccess = function(stream) {
-			    player.srcObject = stream;
-			  };
-				function postImg(Img){
-					var formData = new FormData();
-					formData.append("fname",currentMotion);
-					formData.append("data",Img);
-					$.ajax({
-						type: 'POST',
-						url: '/openface',
-						cache: false,
-						data: formData,
-						processData: false,
-						contentType: false,
-						success: function(res){
-							shot();
-							document.getElementById("gaze").innerHTML = 'Gaze: ' + JSON.parse(res)["gaze"];
-							document.getElementById("emotion").innerHTML = 'Emotion: ' + JSON.parse(res)["emotion"];
-							console.log(JSON.parse(res)["emotion"]);
-						},
-					});
-				}
-				function shot(){
-					var context = snapshot.getContext('2d');
-					context.drawImage(player, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
-					snapshotCanvas.toBlob(postImg, 'image/jpeg');
-				}
-			  navigator.mediaDevices.getUserMedia({video: true})
-			      .then(handleSuccess);
-				shot();
+			function playOnce(motionFile){
+				loadMotion(motionFile, function(){
+					updateMotion(function(){
+						motionParams.splice(0,1);
+						mesh.geometry.animations.splice(1,1);
+					})
+				})
 			}
 
-			document.getElementById("start").addEventListener('click', function(){initiate();});
-			document.getElementById("stop").addEventListener('click', function(){stop();});
+			var player, snapshotCanvas;
 
 			var currentMotion;
-
-			var container;
 
 			var scene, camera;
 
@@ -103,14 +61,12 @@
 
 			var mesh, renderTarget;
 
-			var poseParams = [
-				{
-					name: 'basic',
-					file: 'static/vpd/makoto_basic.vpd'
-				}
-			];
+			var helper, action;
 
-			var helper;
+			var res, time;
+
+			var tmp, param;
+
 			var modelParams = [
 				{
 					name: 'miku',
@@ -119,9 +75,19 @@
 				}
 			];
 
+			var poseParams = [
+				{
+					name: 'basic',
+					file: 'static/vpd/makoto_basic.vpd'
+				}
+			];
+
 			var motionParams = [];
 
 			var poses = {};
+
+			var audio = new Audio("{{ url_for('static', filename='audio/sample.wav') }}");
+			console.log(audio);
 
 			var ready = false;
 
@@ -144,6 +110,7 @@
 			animate();
 
 			function init() {
+				var container;
 				var blinkMorphName = 'まばたき';
 				var blinkVmd = {
 					metadata: {
@@ -231,47 +198,65 @@
 				window.addEventListener( 'resize', onWindowResize, false );
 			}
 
+			const start = function(){
+					mmdLoop().then(function(){
+							start();
+					});
+			}
+
 			// send a request and start sampling from roadmap
 			function initiate() {
-				currentBtnR = document.getElementById("start");
-				currentBtnS = document.getElementById("stop");
-				currentBtnR.style.display = "none";
-				currentBtnS.style.display = "inline";
-				$.ajax({
-					async: true,
-					url: '/initate',
-					cache: false,
-					success: function(res){
-						loadMotion(res, function(){
-							updateMotion(function(){
-								startRecord();
-								mmdLoop();
+				return new Promise(function(resolve){
+					currentBtnR = document.getElementById("start");
+					currentBtnS = document.getElementById("stop");
+					currentBtnR.style.display = "none";
+					currentBtnS.style.display = "inline";
+					$.ajax({
+						async: true,
+						url: '/initate',
+						cache: false,
+						success: function(res){
+							res = JSON.parse(res);
+							loadMotion(res['timenow'], function(){
+								updateMotion(function(){
+									audio.play();
+									audio.volumn = 1/res['proportion'];
+									console.log(audio.volumn);
+									startRecord();
+									start();
+								});
 							});
-						});
-					}
+						}
+					})
 				})
 			}
 
 			// keep download motion files
 			function mmdLoop(){
-        console.log('sending request...')
-				$.ajax({
-					async: true,
-					url: '/gene_motion',
-					cache: false,
-					success: function(res){
-						loadMotion(res, function(){
-							var time = mesh.geometry.animations[1].duration - mesh.mixer.clipAction( motionParams[0].name ).time - clock.getDelta();
-							console.log('sleep time: %f', time);
-							setTimeout(function(){
-							  motionParams.splice(0,1);
-							  mesh.geometry.animations.splice(1,1);
-								updateMotion(function(){
-									mmdLoop();
-								});
-							}, time*1000);
-						})
-					}
+				return new Promise(function(resolve){
+	        console.log('sending request...')
+					$.ajax({
+						async: true,
+						url: '/gene_motion',
+						cache: false,
+						success: function(res){
+							res = JSON.parse(res);
+							loadMotion(res['timenow'], function(){
+								time = mesh.geometry.animations[1].duration - mesh.mixer.clipAction( motionParams[0].name ).time - clock.getDelta();
+								console.log('sleep time: %f', time);
+								setTimeout(function(){
+								  motionParams.splice(0,1);
+								  mesh.geometry.animations.splice(1,1);
+									updateMotion(function(){
+										audio.play();
+										audio.volumn = 1/res['proportion'];
+										console.log(audio.volumn);
+										resolve()
+									});
+								}, (time-1)*1000);
+							})
+						}
+					})
 				})
 			}
 
@@ -287,42 +272,56 @@
 
 			function loadMotion(res, callback){
         console.log('loading...');
-				var loop = true;
-				var tmp = {
+				tmp = {
 					name: res,
 					files: [ 'static/vmd/'+ res +'.vmd' ]
 				};
 
 				motionParams.push(tmp);
 
-				var param = motionParams[ motionParams.length - 1 ];
+				param = motionParams[ motionParams.length - 1 ];
 
 				loader.loadVmds( param.files, function ( vmd ) {
 
 					loader.pourVmdIntoModel( mesh, vmd, param.name );
 
-					loop = false;
-
 					callback();
 
+					console.log('in');
+
 				}, onProgress, onError );
+
+				console.log('out');
 
 			}
 
 			function	updateMotion(callback){
-        console.log('updating...');
 
+        console.log('updating...');
+				// if(currentMotion != undefined){
+				// 	mesh.mixer.clipAction( currentMotion).weight = 0.5;
+				// }
 				currentMotion = motionParams[0].name;
         console.log('motion name: %s', currentMotion);
+				action = mesh.mixer.clipAction( currentMotion )
+				stopAll();
+				action.play();
+				action.loop = THREE.LoopOnce;
+				action.clampWhenFinished = true;
+				startBlink();
 
-				mesh.mixer.clipAction( currentMotion ).play();
-				mesh.mixer.clipAction( currentMotion ).loop = THREE.LoopOnce;
-				mesh.mixer.clipAction( currentMotion ).clampWhenFinished = true;
-
-				update();
+				// update();
 
 				callback();
 
+			}
+
+			function stopAll(){
+				mesh.mixer.stopAllAction();
+			}
+
+			function startBlink(){
+				mesh.mixer.clipAction( 'blinkMorph' ).play();
 			}
 
 			function loadModels ( callback ) {
@@ -466,9 +465,8 @@
 
 				}
 
-
 			}
 
-			</script>
+		</script>
 	</body>
 </html>
