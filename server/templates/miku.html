@@ -40,18 +40,19 @@
 
 			$("#start").click(function(){initiate();});
 			$("#stop").click(function(){stop();});
-			$("#playonce").click(function(){playOnce(10);});
+			$("#playonce").click(function(){playOnce('2');});
 
 			function playOnce(motionFile){
 				loadMotion(motionFile, function(){
 					updateMotion(function(){
-						motionParams.splice(0,1);
-						mesh.geometry.animations.splice(1,1);
+						console.log('motionFile');
+						// motionParams.splice(0,1);
+						// mesh.geometry.animations.splice(1,1);
 					})
 				})
 			}
 
-			var player, snapshotCanvas;
+			// var player, snapshotCanvas;
 
 			var currentMotion;
 
@@ -61,11 +62,7 @@
 
 			var mesh, renderTarget;
 
-			var helper, action;
-
-			var res, time;
-
-			var tmp, param;
+			var helper;
 
 			var modelParams = [
 				{
@@ -87,7 +84,6 @@
 			var poses = {};
 
 			var audio = new Audio("{{ url_for('static', filename='audio/sample.wav') }}");
-			console.log(audio);
 
 			var ready = false;
 
@@ -105,6 +101,7 @@
 
 			helper = new THREE.MMDHelper();
 			mesh = helper.meshes[ 0 ];
+			audio.loop = true;
 
 			init();
 			animate();
@@ -199,36 +196,45 @@
 			}
 
 			const start = function(){
-					mmdLoop().then(function(){
-							start();
-					});
+					setTimeout(function(){
+						mmdLoop().then(function(){
+								start();
+						});
+					},0)
 			}
 
+			function audioPlay(res){
+				audio.volumn = 1/res['proportion'];
+				console.log(audio.volumn);
+			}
+			// startRecord();
 			// send a request and start sampling from roadmap
 			function initiate() {
-				return new Promise(function(resolve){
-					currentBtnR = document.getElementById("start");
-					currentBtnS = document.getElementById("stop");
-					currentBtnR.style.display = "none";
-					currentBtnS.style.display = "inline";
-					$.ajax({
-						async: true,
-						url: '/initate',
-						cache: false,
-						success: function(res){
-							res = JSON.parse(res);
-							loadMotion(res['timenow'], function(){
-								updateMotion(function(){
+				// return new Promise(function(resolve){
+				currentBtnR = document.getElementById("start");
+				currentBtnS = document.getElementById("stop");
+				currentBtnR.style.display = "none";
+				currentBtnS.style.display = "inline";
+				$.ajax({
+					async: true,
+					url: '/initate',
+					cache: false,
+					success: function(res){
+						var res = JSON.parse(res);
+						loadMotion(res['timenow'], function(){
+							updateMotion(function(){
+								setTimeout(function(){
 									audio.play();
-									audio.volumn = 1/res['proportion'];
-									console.log(audio.volumn);
-									startRecord();
+									audioPlay(res);
 									start();
-								});
+								},0)
+								// audioPlay(res);
+								// startRecord();
 							});
-						}
-					})
+						});
+					}
 				})
+				// })
 			}
 
 			// keep download motion files
@@ -240,17 +246,18 @@
 						url: '/gene_motion',
 						cache: false,
 						success: function(res){
-							res = JSON.parse(res);
+							var res = JSON.parse(res);
 							loadMotion(res['timenow'], function(){
-								time = mesh.geometry.animations[1].duration - mesh.mixer.clipAction( motionParams[0].name ).time - clock.getDelta();
+								var time = mesh.geometry.animations[1].duration - mesh.mixer.clipAction( motionParams[0].name ).time - clock.getDelta();
 								console.log('sleep time: %f', time);
 								setTimeout(function(){
 								  motionParams.splice(0,1);
 								  mesh.geometry.animations.splice(1,1);
 									updateMotion(function(){
-										audio.play();
-										audio.volumn = 1/res['proportion'];
-										console.log(audio.volumn);
+										// audioPlay(res);
+										setTimeout(function(){
+											audioPlay(res);
+										},0)
 										resolve()
 									});
 								}, (time-1)*1000);
@@ -272,14 +279,14 @@
 
 			function loadMotion(res, callback){
         console.log('loading...');
-				tmp = {
+				var tmp = {
 					name: res,
 					files: [ 'static/vmd/'+ res +'.vmd' ]
 				};
 
 				motionParams.push(tmp);
 
-				param = motionParams[ motionParams.length - 1 ];
+				var param = motionParams[ motionParams.length - 1 ];
 
 				loader.loadVmds( param.files, function ( vmd ) {
 
@@ -287,11 +294,7 @@
 
 					callback();
 
-					console.log('in');
-
 				}, onProgress, onError );
-
-				console.log('out');
 
 			}
 
@@ -301,9 +304,11 @@
 				// if(currentMotion != undefined){
 				// 	mesh.mixer.clipAction( currentMotion).weight = 0.5;
 				// }
+				console.log(mesh.geometry.animations);
+
 				currentMotion = motionParams[0].name;
         console.log('motion name: %s', currentMotion);
-				action = mesh.mixer.clipAction( currentMotion )
+				var action = mesh.mixer.clipAction( currentMotion )
 				stopAll();
 				action.play();
 				action.loop = THREE.LoopOnce;

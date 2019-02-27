@@ -1,11 +1,14 @@
+# -*- coding: utf-8 -*-
+
 from PyQt5.QtGui import QQuaternion, QVector3D
 import numpy as np
 import pandas as pd
 import re
 import math
+import argparse
 
 def deorder(rotation):
-    return np.array([rotation[0], rotation[2], -rotation[1]])
+    return np.array([rotation[0], rotation[2], rotation[1]])
 
 def miku_to_ibuki(rotations):
     """
@@ -30,44 +33,53 @@ def miku_to_ibuki(rotations):
     # 左肩
     left_shoulder_rotation = QQuaternion.fromEulerAngles(*rotations[4])
     initial_orientation = QQuaternion.fromDirection(QVector3D(2, -0.8, 0), QVector3D(0.5, -0.5, -1))
-    left_shoulder_rotation = left_shoulder_rotation * initial_orientation
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(1, 0, 0), QVector3D(0, 0, -1))
+    left_shoulder_rotation = left_shoulder_rotation * ibuki_initial.inverted()
     rotation_euler = left_shoulder_rotation.getEulerAngles()
     ibuki_rotations.append(deorder(rotation_euler))
 
     # 左腕
     left_arm_rotation = QQuaternion.fromEulerAngles(*rotations[5])
     initial_orientation = QQuaternion.fromDirection(QVector3D(1.73, -1, 0), QVector3D(1, 1.73, 0))
-    left_arm_rotation = left_arm_rotation * initial_orientation
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
+    left_arm_rotation = left_arm_rotation * initial_orientation * ibuki_initial.inverted()
     rotation_euler = left_arm_rotation.getEulerAngles()
     ibuki_rotations.append(deorder(rotation_euler))
 
     # 左ひじ
     left_elbow_rotation = QQuaternion.fromEulerAngles(*rotations[6])
     initial_orientation = QQuaternion.fromDirection(QVector3D(1.73, -1, 0), QVector3D(1, 1.73, 0))
-    left_elbow_rotation = left_elbow_rotation * initial_orientation
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
+    left_elbow_rotation = left_elbow_rotation * initial_orientation * ibuki_initial.inverted()
     rotation_euler = left_elbow_rotation.getEulerAngles()
     ibuki_rotations.append(deorder(rotation_euler))
 
     # 右肩
     right_shoulder_rotation = QQuaternion.fromEulerAngles(*rotations[7])
     initial_orientation = QQuaternion.fromDirection(QVector3D(-2, -0.8, 0), QVector3D(0.5, 0.5, 1))
-    right_shoulder_rotation = right_shoulder_rotation * initial_orientation
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(-1, 0, 0), QVector3D(0, 0, 1))
+    right_shoulder_rotation = right_shoulder_rotation * ibuki_initial.inverted()
     rotation_euler = right_shoulder_rotation.getEulerAngles()
     ibuki_rotations.append(deorder(rotation_euler))
 
     # 右腕
     right_arm_rotation = QQuaternion.fromEulerAngles(*rotations[8])
     initial_orientation = QQuaternion.fromDirection(QVector3D(-1.73, -1, 0), QVector3D(1, -1.73, 0))
-    right_arm_rotation = right_arm_rotation * initial_orientation
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
+    right_arm_rotation = right_arm_rotation * initial_orientation * ibuki_initial.inverted()
     rotation_euler = right_arm_rotation.getEulerAngles()
     ibuki_rotations.append(deorder(rotation_euler))
 
     # 右ひじ
     right_elbow_rotation = QQuaternion.fromEulerAngles(*rotations[9])
     initial_orientation = QQuaternion.fromDirection(QVector3D(-1.73, -1, 0), QVector3D(1, -1.73, 0))
-    right_elbow_rotation = right_elbow_rotation * initial_orientation
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
+    right_elbow_rotation = right_elbow_rotation * initial_orientation * ibuki_initial.inverted()
     rotation_euler = right_elbow_rotation.getEulerAngles()
     ibuki_rotations.append(deorder(rotation_euler))
+
+    with open('/home/fan/test.txt', 'a+') as f:
+        f.write(str(ibuki_rotations))
 
     return ibuki_rotations
 
@@ -93,12 +105,12 @@ def save_csv(rotations):
 
     mapping = [[41, 42, 43],
                [3, 4, 5],
-               [1, 0, 0],
-               [0, 11, 12],
-               [13, 0, 14],
                [2, 0, 0],
                [0, 6, 7],
-               [8, 0, 9]]
+               [8, 0, 9],
+               [1, 0, 0],
+               [0, 11, 12],
+               [13, 0, 14]]
 
     df = pd.DataFrame(np.zeros((len(rotations), len(c))), columns=c)
     for i in range(len(rotations)):
@@ -106,8 +118,8 @@ def save_csv(rotations):
         for j in range(len(rotations[i])):
             for k in range(len(rotations[i][j])):
                 if mapping[j][k]:
-                    df.loc[i,c[mapping[j][k]]] = rotations[i][j][k]/180*math.pi
-    df.to_csv('/home/fan/Documents/ibuki.csv')
+                    df.loc[i,c[mapping[j][k]]] = rotations[i][j][k]/180.*math.pi
+    df.to_csv(output)
 
 def line2list(string):
     line = re.split(r'[,\s]+',string)
@@ -117,8 +129,17 @@ def line2list(string):
 
     return line
 
-if __name__ = "__main__":
-    with open('/home/fan/generate-motion-from-roadmap/rotation/20180718203144pos.txt', 'r') as txtfile:
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='generate motion file from roadmap')
+    parser.add_argument('-i', '--input', dest='input', type=str,
+                        help='mmd file path')
+    parser.add_argument('-o', '--output', dest='output', type=str,
+                        help='ibuki file path')
+    args = parser.parse_args()
+    input = args.input
+    output = args.output
+
+    with open(input, 'r') as txtfile:
         miku_rotations = [np.array(line2list(line)).reshape(10,3) for line in txtfile]
 
     ibuki_rotations = [miku_to_ibuki(frame) for frame in miku_rotations]

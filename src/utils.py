@@ -57,6 +57,8 @@ def filter(data, plot, timenow, cutoff=4):
     for i in range(data.shape[1]):
         for j in range(data.shape[2]):
             f = data[:,i,j]
+            first_value = f[0]
+            last_value = f[-1]
             F = np.fft.fft(f)
             # F_abs = np.abs(F)
             # F_abs_amp = F_abs / N * 2

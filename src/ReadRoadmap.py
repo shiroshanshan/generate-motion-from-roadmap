@@ -1,3 +1,5 @@
+# coding:utf-8
+
 import numpy as np
 from VmdCreator import *
 from scipy.sparse import lil_matrix, csr_matrix, csc_matrix
@@ -153,13 +155,60 @@ class Roadmap(object):
         timer = threading.Timer(600, save_every_ten_min)
         timer.start()
 
-    def test_filter_param(self, vmd_file, bone_csv_file, fc):
-        rotations = [15063, 15064, 15065, 15066, 15067, 4852, 14793, 4834, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 8849, 8850, 8851, 8852, 329, 328, 342, 415, 3806, 4641, 7807, 7808]
+    def test_filter_param(self, vmd_file, bone_csv_file, text_file, csv_file, fc):
+        rotations = [369, 8136, 415, 9592, 9593, 9594, 9595, 9596, 9597, 9598, 9599, 9600, 9601, 9602, 9603, 9604, 9605, 9606, 9607, 9608, 9609, 9610, 9611, 9612, 9613, 9614, 9615, 9616, 9617, 9618, 9619, 9620, 9621, 9622, 9623, 9624, 9625, 9626, 9627, 9628, 9629, 9630, 9631, 9632, 9633, 9634, 9635, 9636, 9637, 9638, 9639, 9640, 9641, 9642, 9643, 9644, 9645, 9646, 9647, 9648, 9649, 9650, 9651, 9652, 2211, 2214, 4717, 16393, 16394, 16395, 16396, 16, 3074, 1, 2934, 1, 16, 1258, 11614, 11615, 11616, 11617, 11618, 11619, 11620, 11621, 11622, 11623, 11624, 11625, 2643, 3035, 1, 9749, 9750, 9751, 9752, 1, 7386, 3024]
         rotations = np.array(list(map(lambda x: self.states[x][0], rotations)))
         rotations = interpolation(rotations)
-        rotations = filter(rotations, False, 0, fc)
+        rotations, _ = filter(rotations, False, 0, fc)
+        with open(text_file, 'w') as f:
+            for frame in rotations:
+                for o in range(len(frame)):
+                    f.write(str(frame[o][0]) + ' ' + str(frame[o][1]) + ' ' + str(frame[o][2]))
+                    if o != len(frame) - 1:
+                        f.write(',')
+                    else:
+                        f.write('\n')
+
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
+
         print('test file created')
+
+        def line2list(data_string):
+            line = re.split(r'[,\s]+',data_string)
+            if '' in line:
+                line.remove('')
+            else:
+                pass
+            for i in range(len(line)):
+                line[i] = float(line[i])
+
+            return line
+
+        joint = ["index", "上半身", "下半身", "首", "頭", "左肩", "左腕", "左ひじ","右肩", "右腕", "右ひじ"]
+        joints = []
+        for item in joint:
+            if item == 'index':
+                joints.append(item)
+            else:
+            	joints.append(item+'_x')
+            	joints.append(item+'_y')
+            	joints.append(item+'_z')
+
+        data = []
+        with open(text_file, 'r') as txtfile:
+            cnt = 0
+            for line in txtfile:
+                line = line2list(line)
+                line.insert(0, cnt)
+                data.append(line)
+                cnt += 1
+        data = np.array(data)
+        with open(csv_file, 'w') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(joints)
+            writer.writerows(data)
+        print('saved')
+
 
 PATH = os.getcwd()
 
