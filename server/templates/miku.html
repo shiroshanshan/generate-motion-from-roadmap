@@ -251,6 +251,7 @@
 								var time = mesh.geometry.animations[1].duration - mesh.mixer.clipAction( motionParams[0].name ).time - clock.getDelta();
 								console.log('sleep time: %f', time);
 								setTimeout(function(){
+									console.log('current time: %f', mesh.mixer.clipAction( motionParams[0].name ).time);
 								  motionParams.splice(0,1);
 								  mesh.geometry.animations.splice(1,1);
 									updateMotion(function(){
@@ -260,7 +261,7 @@
 										},0)
 										resolve()
 									});
-								}, (time-1)*1000);
+								}, (time-1)*1010);
 							})
 						}
 					})

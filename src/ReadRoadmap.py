@@ -52,7 +52,7 @@ class Roadmap(object):
 
         return choice
 
-    def motion_generation(self, init_state, vmd_file, bone_csv_file, plot, write):
+    def motion_generation(self, init_state, vmd_file, bone_csv_file, plot, write, compensate=[]):
         # init_state = self.init_state()
         rotations = []
         routes = []
@@ -118,6 +118,11 @@ class Roadmap(object):
             plt.savefig(fig_name)
 
         rotations, proportion = filter(rotations, plot, timenow, 2)
+        if len(compensate):
+            for i in range(30):
+                rotations[i] = rotations[i] * i/30. + compensate[i] * (30-i)/30.
+
+        last_states = rotations[-30:]
 
         if write:
             with open('readed/{0}/smoothed.txt'.format(timenow),'w') as f:
@@ -141,7 +146,7 @@ class Roadmap(object):
         generate_vmd_file(rotations, vmd_file, bone_csv_file)
         print('vmd file successfully saved')
 
-        return last, proportion
+        return last, proportion, last_states
 
     def save_every_ten(self):
         def save_every_ten_min():
