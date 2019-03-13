@@ -10,7 +10,7 @@ def process(PATH, folder, file):
         """
         os.chdir(openpose)
         os.popen('/build/examples/openpose/openpose.bin --video {0}/{1}/{2} \
-        --write_json {3}/openpose/{1}/{4}/ --display 0 --render_pose 0 \
+        --write_json {3}/data/2dpose/{1}/{4}/ --display 0 --render_pose 0 \
         --model_pose COCO'.format(INPUT, folder, file, PATH, file.split('.')[0])).readlines()
 
         print('################ openpose end #####################')
@@ -18,7 +18,7 @@ def process(PATH, folder, file):
         """
         remove abnormal data
         """
-        result = openpose_select('{0}/openpose/{1}/{2}/'.format(PATH, folder, file.split('.')[0]))
+        result = openpose_select('{0}/data/2dpose/{1}/{2}/'.format(PATH, folder, file.split('.')[0]))
         print('select check: '+result)
         if re.split(r'[\s]+', result)[0] == 'error':
             return result
@@ -27,7 +27,7 @@ def process(PATH, folder, file):
         resampling and 3d pose estimation
         """
         os.chdir(POSE)
-        os.popen('python {0}/src/totxt.py --pose {1}/3dpose/{2}{3}.txt --openpose {1}/openpose/{2}/{3}/ \
+        os.popen('python {0}/src/totxt.py --pose {1}/data/3dpose/{2}{3}.txt --openpose {1}/data/2dpose/{2}/{3}/ \
         --interpolation --multiplier 1'.format(POSE, PATH, folder, file.split('.')[0])).readlines()
         print('################ totxt end #####################')
 

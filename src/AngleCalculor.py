@@ -161,8 +161,8 @@ def positions_to_rotation(pos, frame=0, xangle=0):
 
 if __name__ == '__main__':
     PATH = os.getcwd()
-    TARGET = PATH + '/rotation/'
-    POSE = PATH + '/3dpose/'
+    TARGET = PATH + '/data/rotation/'
+    POSE = PATH + '/data/3dpose/'
 
     dirs = os.listdir(POSE)
     for files in dirs:
