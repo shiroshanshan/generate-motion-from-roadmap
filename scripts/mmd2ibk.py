@@ -8,7 +8,7 @@ import math
 import argparse
 
 def deorder(rotation):
-    return np.array([rotation[0], rotation[2], rotation[1]])
+    return np.array([-rotation[0], -rotation[1], rotation[2]])
 
 def miku_to_ibuki(rotations):
     """
@@ -30,13 +30,28 @@ def miku_to_ibuki(rotations):
     # 省略
 #     ibuki_rotations.append(deorder(rotations[3]))
 
-    # 左肩
-    left_shoulder_rotation = QQuaternion.fromEulerAngles(*rotations[4])
-    initial_orientation = QQuaternion.fromDirection(QVector3D(2, -0.8, 0), QVector3D(0.5, -0.5, -1))
-    ibuki_initial = QQuaternion.fromDirection(QVector3D(1, 0, 0), QVector3D(0, 0, -1))
-    left_shoulder_rotation = left_shoulder_rotation * ibuki_initial.inverted()
-    rotation_euler = left_shoulder_rotation.getEulerAngles()
-    ibuki_rotations.append(deorder(rotation_euler))
+    # 左ひじ
+    left_elbow_rotation = QQuaternion.fromEulerAngles(*rotations[6])
+    initial_orientation = QQuaternion.fromDirection(QVector3D(1.73, -1, 0), QVector3D(1, 1.73, 0))
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
+    left_elbow_rotation = left_elbow_rotation * initial_orientation * ibuki_initial.inverted()
+    rotation_euler = left_elbow_rotation.getEulerAngles()
+    z = rotation_euler[2]
+    x = (QQuaternion.fromEulerAngles(0, 0, z).inverted() * left_elbow_rotation).getEulerAngles()[0]
+    y = (QQuaternion.fromEulerAngles(x, 0, 0).inverted() * QQuaternion.fromEulerAngles(0, 0, z).inverted() * left_elbow_rotation).getEulerAngles()[1]
+    a = -math.cos(math.radians(y))+math.sin(math.radians(x))*math.sin(math.radians(y))/math.tan(math.radians(z))
+    b = -math.cos(math.radians(x))/math.tan(math.radians(z))
+    c = -math.sin(math.radians(y))-math.sin(math.radians(x))*math.cos(math.radians(y))/math.tan(math.radians(z))
+    if c > 0:
+        pitch = math.degrees(math.acos((a**2+b**2)**0.5/(a**2+b**2+c**2)**0.5))
+    else:
+        pitch = -math.degrees(math.acos((a**2+b**2)**0.5/(a**2+b**2+c**2)**0.5))
+    if a > 0:
+        arm_yaw = math.degrees(math.acos((b**2+c**2)**0.5/(a**2+b**2+c**2)**0.5))
+    else:
+        arm_yaw = -math.degrees(math.acos((b**2+c**2)**0.5/(a**2+b**2+c**2)**0.5))
+    yaw = y
+    ibuki_rotations.append(deorder([pitch, 0, yaw]))
 
     # 左腕
     left_arm_rotation = QQuaternion.fromEulerAngles(*rotations[5])
@@ -44,31 +59,37 @@ def miku_to_ibuki(rotations):
     ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
     left_arm_rotation = left_arm_rotation * initial_orientation * ibuki_initial.inverted()
     rotation_euler = left_arm_rotation.getEulerAngles()
-    ibuki_rotations.append(deorder(rotation_euler))
+    z = rotation_euler[2]
+    x = (QQuaternion.fromEulerAngles(0, 0, z).inverted() * left_arm_rotation).getEulerAngles()[0]
+    y = (QQuaternion.fromEulerAngles(x, 0, 0).inverted() * QQuaternion.fromEulerAngles(0, 0, z).inverted() * left_arm_rotation).getEulerAngles()[1]
+    a = -math.cos(math.radians(y))+math.sin(math.radians(x))*math.sin(math.radians(y))/math.tan(math.radians(z))
+    b = -math.cos(math.radians(x))/math.tan(math.radians(z))
+    c = -math.sin(math.radians(y))-math.sin(math.radians(x))*math.cos(math.radians(y))/math.tan(math.radians(z))
+    if c > 0:
+        pitch = math.degrees(math.acos((a**2+b**2)**0.5/(a**2+b**2+c**2)**0.5))
+    else:
+        pitch = -math.degrees(math.acos((a**2+b**2)**0.5/(a**2+b**2+c**2)**0.5))
+    if a > 0:
+        roll = math.degrees(math.acos((b**2+c**2)**0.5/(a**2+b**2+c**2)**0.5))
+    else:
+        roll = -math.degrees(math.acos((b**2+c**2)**0.5/(a**2+b**2+c**2)**0.5))
+    yaw = arm_yaw
+    ibuki_rotations.append(deorder([0, roll, yaw]))
+    ibuki_rotations.append(deorder([pitch, 0, 0]))
 
-    # 左ひじ
-    left_elbow_rotation = QQuaternion.fromEulerAngles(*rotations[6])
-    initial_orientation = QQuaternion.fromDirection(QVector3D(1.73, -1, 0), QVector3D(1, 1.73, 0))
-    ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
-    left_elbow_rotation = left_elbow_rotation * initial_orientation * ibuki_initial.inverted()
-    rotation_euler = left_elbow_rotation.getEulerAngles()
-    ibuki_rotations.append(deorder(rotation_euler))
-
-    # 右肩
-    right_shoulder_rotation = QQuaternion.fromEulerAngles(*rotations[7])
-    initial_orientation = QQuaternion.fromDirection(QVector3D(-2, -0.8, 0), QVector3D(0.5, 0.5, 1))
-    ibuki_initial = QQuaternion.fromDirection(QVector3D(-1, 0, 0), QVector3D(0, 0, 1))
-    right_shoulder_rotation = right_shoulder_rotation * ibuki_initial.inverted()
-    rotation_euler = right_shoulder_rotation.getEulerAngles()
-    ibuki_rotations.append(deorder(rotation_euler))
-
-    # 右腕
-    right_arm_rotation = QQuaternion.fromEulerAngles(*rotations[8])
-    initial_orientation = QQuaternion.fromDirection(QVector3D(-1.73, -1, 0), QVector3D(1, -1.73, 0))
-    ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
-    right_arm_rotation = right_arm_rotation * initial_orientation * ibuki_initial.inverted()
-    rotation_euler = right_arm_rotation.getEulerAngles()
-    ibuki_rotations.append(deorder(rotation_euler))
+    # 左肩
+    left_shoulder_rotation = QQuaternion.fromEulerAngles(*rotations[4])
+    initial_orientation = QQuaternion.fromDirection(QVector3D(2, -0.8, 0), QVector3D(0.5, -0.5, -1))
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(1, 0, 0), QVector3D(0, 0, -1))
+    left_shoulder_rotation = left_shoulder_rotation * initial_orientation * ibuki_initial.inverted()
+    rotation_euler = left_shoulder_rotation.getEulerAngles()
+    # z = rotation_euler[2]
+    # x = (QQuaternion.fromEulerAngles(0, 0, z).inverted() * left_shoulder_rotation).getEulerAngles()[0] + x
+    # y = (QQuaternion.fromEulerAngles(0, 0, z).inverted() * QQuaternion.fromEulerAngles(x, 0, 0).inverted() * left_shoulder_rotation).getEulerAngles()[1]
+    # a = -math.cos(math.radians(y))+math.sin(math.radians(x))*math.sin(math.radians(y))/math.tan(math.radians(z))
+    # b = -math.cos(math.radians(x))/math.tan(math.radians(z))
+    # c = -math.sin(math.radians(y))-math.sin(math.radians(x))*math.cos(math.radians(y))/math.tan(math.radians(z))
+    # ibuki_rotations.append(deorder([x,y,z]))
 
     # 右ひじ
     right_elbow_rotation = QQuaternion.fromEulerAngles(*rotations[9])
@@ -76,10 +97,59 @@ def miku_to_ibuki(rotations):
     ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
     right_elbow_rotation = right_elbow_rotation * initial_orientation * ibuki_initial.inverted()
     rotation_euler = right_elbow_rotation.getEulerAngles()
-    ibuki_rotations.append(deorder(rotation_euler))
+    z = rotation_euler[2]
+    x = (QQuaternion.fromEulerAngles(0, 0, z).inverted() * right_elbow_rotation).getEulerAngles()[0]
+    y = (QQuaternion.fromEulerAngles(x, 0, 0).inverted() * QQuaternion.fromEulerAngles(0, 0, z).inverted() * right_elbow_rotation).getEulerAngles()[1]
+    a = math.cos(math.radians(y))+math.sin(math.radians(x))*math.sin(math.radians(y))/math.tan(math.radians(z))
+    b = math.cos(math.radians(x))/math.tan(math.radians(z))
+    c = math.sin(math.radians(y))-math.sin(math.radians(x))*math.cos(math.radians(y))/math.tan(math.radians(z))
+    if c > 0:
+        pitch = math.degrees(math.acos((a**2+b**2)**0.5/(a**2+b**2+c**2)**0.5))
+    else:
+        pitch = -math.degrees(math.acos((a**2+b**2)**0.5/(a**2+b**2+c**2)**0.5))
+    if a > 0:
+        arm_yaw = math.degrees(math.acos((b**2+c**2)**0.5/(a**2+b**2+c**2)**0.5))
+    else:
+        arm_yaw = -math.degrees(math.acos((b**2+c**2)**0.5/(a**2+b**2+c**2)**0.5))
+    yaw = y
+    ibuki_rotations.append(deorder([pitch, 0, yaw]))
 
-    with open('/home/fan/test.txt', 'a+') as f:
-        f.write(str(ibuki_rotations))
+    # 右腕
+    right_arm_rotation = QQuaternion.fromEulerAngles(*rotations[8])
+    initial_orientation = QQuaternion.fromDirection(QVector3D(-1.73, -1, 0), QVector3D(1, -1.73, 0))
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(0, -1, 0), QVector3D(1, 0, 0))
+    right_arm_rotation = right_arm_rotation * initial_orientation * ibuki_initial.inverted()
+    rotation_euler = right_arm_rotation.getEulerAngles()
+    z = rotation_euler[2]
+    x = (QQuaternion.fromEulerAngles(0, 0, z).inverted() * right_arm_rotation).getEulerAngles()[0]
+    y = (QQuaternion.fromEulerAngles(x, 0, 0).inverted() * QQuaternion.fromEulerAngles(0, 0, z).inverted() * right_arm_rotation).getEulerAngles()[1]
+    a = math.cos(math.radians(y))+math.sin(math.radians(x))*math.sin(math.radians(y))/math.tan(math.radians(z))
+    b = math.cos(math.radians(x))/math.tan(math.radians(z))
+    c = math.sin(math.radians(y))-math.sin(math.radians(x))*math.cos(math.radians(y))/math.tan(math.radians(z))
+    if c > 0:
+        pitch = math.degrees(math.acos((a**2+b**2)**0.5/(a**2+b**2+c**2)**0.5))
+    else:
+        pitch = -math.degrees(math.acos((a**2+b**2)**0.5/(a**2+b**2+c**2)**0.5))
+    if a > 0:
+        roll = math.degrees(math.acos((b**2+c**2)**0.5/(a**2+b**2+c**2)**0.5))
+    else:
+        roll = -math.degrees(math.acos((b**2+c**2)**0.5/(a**2+b**2+c**2)**0.5))
+    yaw = arm_yaw
+    ibuki_rotations.append(deorder([0, roll, yaw]))
+    ibuki_rotations.append(deorder([pitch, 0, 0]))
+
+    # 右肩
+    right_shoulder_rotation = QQuaternion.fromEulerAngles(*rotations[7])
+    initial_orientation = QQuaternion.fromDirection(QVector3D(-2, -0.8, 0), QVector3D(0.5, 0.5, 1))
+    ibuki_initial = QQuaternion.fromDirection(QVector3D(-1, 0, 0), QVector3D(0, 0, 1))
+    right_shoulder_rotation = right_shoulder_rotation * initial_orientation * ibuki_initial.inverted()
+    rotation_euler = right_shoulder_rotation.getEulerAngles()
+    # z = rotation_euler[2]
+    # x = (QQuaternion.fromEulerAngles(0, 0, z).inverted() * right_shoulder_rotation).getEulerAngles()[0] + x
+    # y = (QQuaternion.fromEulerAngles(0, 0, z).inverted() * QQuaternion.fromEulerAngles(x, 0, 0).inverted() * right_shoulder_rotation).getEulerAngles()[1]
+    # ibuki_rotations.append(deorder([x,y,z]))
+    # with open('/home/fan/test.txt', 'a+') as f:
+    #     f.write(str(ibuki_rotations))
 
     return ibuki_rotations
 
@@ -105,12 +175,12 @@ def save_csv(rotations):
 
     mapping = [[41, 42, 43],
                [3, 4, 5],
-               [2, 0, 0],
-               [0, 6, 7],
                [8, 0, 9],
-               [1, 0, 0],
+               [0, 6, 7],
+               [2, 0, 0],
+               [13, 0, 14],
                [0, 11, 12],
-               [13, 0, 14]]
+               [1, 0, 0]]
 
     df = pd.DataFrame(np.zeros((len(rotations), len(c))), columns=c)
     for i in range(len(rotations)):
