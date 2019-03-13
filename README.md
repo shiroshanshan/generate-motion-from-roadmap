@@ -50,4 +50,4 @@ Classified by Neural Network and predict by [free-energy principle](docs/free en
 *  run ```python script/plot/animation.py``` to write out gif animation from joint angles (decrease the dimension to 2 by PCA).
 
 ## Reference
-Thanks to [ArashHosseini](https://github.com/ArashHosseini/3d-pose-baseline/) [3d-pose-baseline-vmd](https://github.com/miu200521358/3d-pose-baseline-vmd) and  [errno-mmd](https://github.com/errno-mmd/VMD-Lifting).
+Thanks to [ArashHosseini](https://github.com/ArashHosseini/3d-pose-baseline/), [3d-pose-baseline-vmd](https://github.com/miu200521358/3d-pose-baseline-vmd) and  [errno-mmd](https://github.com/errno-mmd/VMD-Lifting).
